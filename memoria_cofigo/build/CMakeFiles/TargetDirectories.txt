@@ -1,0 +1,4 @@
+/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles/fda_experimentos.dir
+/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles/fda_bridge_ibex.dir
+/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles/edit_cache.dir
+/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles/rebuild_cache.dir
