@@ -7,12 +7,7 @@
 using namespace ibex;
 using namespace std;
 
-double heur_diving_score(const System& sys, const IntervalVector& box) {
-    if (!sys.goal) return 0.0;
-    Interval f_int = sys.goal->eval(box);
-    return -f_int.lb();
-}
-
+namespace {
 int widest_var(const IntervalVector& box) {
     int idx = 0;
     double wmax = box[0].diam();
@@ -22,8 +17,53 @@ int widest_var(const IntervalVector& box) {
     }
     return idx;
 }
+}
 
-void bisect_box(const IntervalVector& parent,
+OptContext::OptContext(const System& s)
+    : sys(s),
+      contractor(s) {} // HC4 contractor sobre el sistema original
+
+double adaptive_k(double k_base, double ub_prev, double ub_new) {
+    if (!std::isfinite(ub_prev) || !std::isfinite(ub_new) || ub_new >= ub_prev) {
+        return k_base;
+    }
+    double rel_impr = (ub_prev - ub_new) / (std::fabs(ub_prev) + 1e-9);
+    double alpha = 0.5;
+    return k_base * (1.0 + alpha * rel_impr);
+}
+
+double heur_diving_score(const OptContext& opt,
+                         const IntervalVector& box,
+                         const Interval& goal_bounds) {
+    if (!opt.sys.goal) return 0.0;
+    if (!goal_bounds.is_empty()) {
+        double lb = goal_bounds.lb();
+        if (std::isfinite(lb)) return -lb;
+    }
+    Interval f_int = opt.sys.goal->eval(box);
+    return -f_int.lb();
+}
+
+bool contract_with_goal(OptContext& opt,
+                        IntervalVector& box,
+                        Interval& goal_bounds,
+                        double /*current_ub*/) {
+    opt.contractor.contract(box);
+    if (box.is_empty()) {
+        goal_bounds.set_empty();
+        return false;
+    }
+    if (opt.sys.goal) {
+        goal_bounds = opt.sys.goal->eval(box);
+    } else {
+        goal_bounds = Interval();
+    }
+    return true;
+}
+
+void bisect_box(OptContext& /*opt*/,
+                const IntervalVector& parent,
+                const Interval& /*goal_bounds*/,
                 IntervalVector& left,
                 IntervalVector& right) {
     left  = parent;
@@ -34,13 +74,13 @@ void bisect_box(const IntervalVector& parent,
     right[var] = Interval(mid, parent[var].ub());
 }
 
-double eval_at_mid(const System& sys, const IntervalVector& box) {
-    if (!sys.goal) return std::numeric_limits<double>::infinity();
+double eval_at_mid(const OptContext& opt, const IntervalVector& box) {
+    if (!opt.sys.goal) return std::numeric_limits<double>::infinity();
     if (box.is_unbounded()) {
         return std::numeric_limits<double>::infinity();
     }
     Vector mid = box.mid();
-    Interval val = sys.goal->eval(mid);
+    Interval val = opt.sys.goal->eval(mid);
     return 0.5 * (val.lb() + val.ub());
 }
 

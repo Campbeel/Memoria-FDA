@@ -35,8 +35,8 @@ int main(int argc, char** argv) {
     int num_runs = (argc >= 4) ? std::atoi(argv[3]) : 1;
 
     System sys(bch_file.c_str());
+    OptContext opt(sys);
     IntervalVector root_box = sys.box;
-    CtcHC4 hc4(sys);
     bool root_bounded = !root_box.is_unbounded();
 
     double eps_box   = 1e-9;
@@ -53,58 +53,58 @@ int main(int argc, char** argv) {
         std::mt19937 rng(123456u + r);
         RunStats stats;
         if (variant == "base") {
-            stats = run_fda_base(sys, hc4, root_box, r, eps_box, max_iters);
+            stats = run_fda_base(opt, root_box, r, eps_box, max_iters);
         } else if (variant == "base_bb") {
             int max_bb_nodes  = 5000000;
             int max_fd_iters  = 100000;
-            stats = run_fda_base_bb(sys, hc4, root_box, r,
+            stats = run_fda_base_bb(opt, root_box, r,
                                     eps_box, max_bb_nodes, max_fd_iters);
         } else if (variant == "depth_k") {
             if (!root_bounded) {
-                stats = run_fda_base(sys, hc4, root_box, r, eps_box, max_iters);
+                stats = run_fda_base(opt, root_box, r, eps_box, max_iters);
                 stats.variant = "base_depth_fallback";
             } else {
-                stats = run_fda_depth_Tk(sys, hc4, root_box, r, T0, k,
+                stats = run_fda_depth_Tk(opt, root_box, r, T0, k,
                                          d_max, eps_box, max_iters);
             }
         } else if (variant == "depth_k_bb") {
             int d_max_fdive   = 50;
             int max_bb_nodes  = 1000000;
             int max_fd_iters  = 100000;
-            stats = run_fda_depth_Tk_bb(sys, hc4, root_box, r, T0, k,
+            stats = run_fda_depth_Tk_bb(opt, root_box, r, T0, k,
                                         d_max_fdive, eps_box,
                                         max_bb_nodes, max_fd_iters);
         } else if (variant == "depth_k_rand") {
             if (!root_bounded) {
-                stats = run_fda_base(sys, hc4, root_box, r, eps_box, max_iters);
+                stats = run_fda_base(opt, root_box, r, eps_box, max_iters);
                 stats.variant = "base_depth_rand_fallback";
             } else {
-                stats = run_fda_depth_Tk_rand(sys, hc4, root_box, r, T0, k,
+                stats = run_fda_depth_Tk_rand(opt, root_box, r, T0, k,
                                               d_max, eps_box, max_iters, rng);
             }
         } else if (variant == "depth_k_rand_bb") {
             int d_max_fdive   = 50;
             int max_bb_nodes  = 1000000;
             int max_fd_iters  = 100000;
-            stats = run_fda_depth_Tk_rand_bb(sys, hc4, root_box, r, T0, k,
+            stats = run_fda_depth_Tk_rand_bb(opt, root_box, r, T0, k,
                                              d_max_fdive, eps_box,
                                              max_bb_nodes, max_fd_iters);
         } else if (variant == "vol_k") {
-            stats = run_fda_vol_Tk(sys, hc4, root_box, r, T0, k,
+            stats = run_fda_vol_Tk(opt, root_box, r, T0, k,
                                    eps_V, beta, eps_box, max_iters);
         } else if (variant == "vol_k_bb") {
             int max_bb_nodes  = 1000000;
             int max_fd_iters  = 100000;
-            stats = run_fda_vol_Tk_bb(sys, hc4, root_box, r, T0, k,
+            stats = run_fda_vol_Tk_bb(opt, root_box, r, T0, k,
                                       eps_V, beta, eps_box,
                                       max_bb_nodes, max_fd_iters);
         } else if (variant == "vol_k_rand") {
-            stats = run_fda_vol_Tk_rand(sys, hc4, root_box, r, T0, k,
+            stats = run_fda_vol_Tk_rand(opt, root_box, r, T0, k,
                                         eps_V, beta, eps_box, max_iters, rng);
         } else if (variant == "vol_k_rand_bb") {
             int max_bb_nodes  = 1000000;
             int max_fd_iters  = 100000;
-            stats = run_fda_vol_Tk_rand_bb(sys, hc4, root_box, r, T0, k,
+            stats = run_fda_vol_Tk_rand_bb(opt, root_box, r, T0, k,
                                            eps_V, beta, eps_box,
                                            max_bb_nodes, max_fd_iters);
         } else {

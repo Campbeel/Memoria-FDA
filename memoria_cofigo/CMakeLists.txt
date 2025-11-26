@@ -3,9 +3,6 @@ project(memoria_fda CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-# Habilita AddressSanitizer para cazar corrupción de memoria en fda_bridge_ibex.
-add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
-link_libraries(-fsanitize=address)
 
 # === Ruta base de IBEX (ajusta si la tienes en otra carpeta) ===
 set(IBEX_ROOT "/home/benjamin-mu-oz/ibex-lib")
@@ -63,6 +60,22 @@ add_executable(fda_experimentos
     fda_experimentos.cpp
 )
 target_link_libraries(fda_experimentos ibex)
+
+# Ejecutables individuales por variante (sin el bridge).
+add_executable(fda_run_base run_base_main.cpp fda_bridge_common.cpp FD_base.cpp)
+target_link_libraries(fda_run_base ibex gaol ultim Clp CoinUtils)
+
+add_executable(fda_run_depth_k run_depth_k_main.cpp fda_bridge_common.cpp FDA_depth_k.cpp)
+target_link_libraries(fda_run_depth_k ibex gaol ultim Clp CoinUtils)
+
+add_executable(fda_run_depth_k_rand run_depth_k_rand_main.cpp fda_bridge_common.cpp FDA_depth_k_rand.cpp)
+target_link_libraries(fda_run_depth_k_rand ibex gaol ultim Clp CoinUtils)
+
+add_executable(fda_run_vol_k run_vol_k_main.cpp fda_bridge_common.cpp FDA_vol_k.cpp)
+target_link_libraries(fda_run_vol_k ibex gaol ultim Clp CoinUtils)
+
+add_executable(fda_run_vol_k_rand run_vol_k_rand_main.cpp fda_bridge_common.cpp FDA_vol_k_rand.cpp)
+target_link_libraries(fda_run_vol_k_rand ibex gaol ultim Clp CoinUtils)
 
 # === Ejecutable puente IBEX + FDA ===
 add_executable(fda_bridge_ibex

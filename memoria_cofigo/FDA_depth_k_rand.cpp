@@ -8,8 +8,8 @@
 using namespace ibex;
 using namespace std;
 
-RunStats dive_depth_k_rand(const System& sys,
-                           Ctc& contractor,
+// FD con profundidad límite, temperatura determinista y ruido en T y d_max.
+RunStats dive_depth_k_rand(OptContext& opt,
                            const IntervalVector& start_box,
                            int base_depth,
                            int run_id,
@@ -33,8 +33,10 @@ RunStats dive_depth_k_rand(const System& sys,
     long depth_accum = 0;
 
     double UB = UB_global_in;
+    double UB_prev = UB;
     double T  = T0;
     std::uniform_real_distribution<double> unif01(0.0, 1.0);
+    Interval goal_bounds;
 
     int delta_d = 10;
     std::uniform_int_distribution<int> unif_int(-delta_d, delta_d);
@@ -46,39 +48,43 @@ RunStats dive_depth_k_rand(const System& sys,
         depth_accum += depth;
         if (depth > res.max_depth) res.max_depth = depth;
 
-        contractor.contract(X);
+        contract_with_goal(opt, X, goal_bounds, UB);
         if (X.is_empty()) break;
 
-        if (sys.goal) {
-            Interval f_int = sys.goal->eval(X);
-            double f_mid = eval_at_mid(sys, X);
-            if (f_mid < UB) UB = f_mid;
+        if (!goal_bounds.is_empty()) {
+            double f_ub = goal_bounds.ub();
+            if (std::isfinite(f_ub) && f_ub < UB) UB = f_ub;
+            double f_mid = eval_at_mid(opt, X);
+            if (std::isfinite(f_mid) && f_mid < UB) UB = f_mid;
         }
 
-        if (depth >= d_budget) break;
-
-        if (depth > 20 && X.max_diam() < eps_box) {
-            res.reached_optimum = true;
-            break;
+        if (depth >= d_budget) {
+            d_budget += d_max_run; // extiende el presupuesto para seguir explorando
         }
+
+        if (depth > base_depth && X.max_diam() < eps_box) break;
 
         IntervalVector left(X.size()), right(X.size());
-        bisect_box(X, left, right);
+        bisect_box(opt, X, goal_bounds, left, right);
 
+        double k_eff = adaptive_k(k, UB_prev, UB);
+        UB_prev = UB;
         double rL = unif01(rng);
         double rR = unif01(rng);
-        double T_childL = k * T / 2.0 * rL;
-        double T_childR = k * T / 2.0 * rR;
+        double T_childL = k_eff * T / 2.0 * rL;
+        double T_childR = k_eff * T / 2.0 * rR;
 
-        double scoreL = heur_diving_score(sys, left)  + T_childL;
-        double scoreR = heur_diving_score(sys, right) + T_childR;
+        double scoreL = heur_diving_score(opt, left, Interval())  + T_childL;
+        double scoreR = heur_diving_score(opt, right, Interval()) + T_childR;
 
         if (scoreL >= scoreR) {
             X = left;
             T = T_childL;
+            goal_bounds = Interval();
         } else {
             X = right;
             T = T_childR;
+            goal_bounds = Interval();
         }
 
         depth++;
@@ -92,12 +98,12 @@ RunStats dive_depth_k_rand(const System& sys,
         std::chrono::duration<double>(t1 - t0).count();
 
     res.best_value = UB;
+    res.reached_optimum = std::isfinite(UB);
     best_value_out = UB;
     return res;
 }
 
-RunStats run_fda_depth_Tk_rand(const System& sys,
-                               Ctc& contractor,
+RunStats run_fda_depth_Tk_rand(OptContext& opt,
                                const IntervalVector& root_box,
                                int run_id,
                                double T0,
@@ -108,13 +114,12 @@ RunStats run_fda_depth_Tk_rand(const System& sys,
                                std::mt19937& rng)
 {
     double best_value = std::numeric_limits<double>::infinity();
-    return dive_depth_k_rand(sys, contractor, root_box, /*base_depth=*/0, run_id,
+    return dive_depth_k_rand(opt, root_box, /*base_depth=*/0, run_id,
                              T0, k, d_max, eps_box, max_iters,
                              best_value, best_value, rng);
 }
 
-RunStats run_fda_depth_Tk_rand_bb(const System& sys,
-                                  Ctc& contractor,
+RunStats run_fda_depth_Tk_rand_bb(OptContext& opt,
                                   const IntervalVector& root_box,
                                   int run_id,
                                   double T0,
@@ -133,9 +138,10 @@ RunStats run_fda_depth_Tk_rand_bb(const System& sys,
     auto t0 = std::chrono::high_resolution_clock::now();
 
     std::vector<BbNode> active;
-    active.push_back({root_box, 0, T0});
+    active.push_back({root_box, Interval(), 0, T0});
 
     double UB_global = std::numeric_limits<double>::infinity();
+    double UB_global_prev = UB_global;
     bool   has_ub    = false;
     long depth_accum = 0;
     int  bb_nodes_processed = 0;
@@ -149,13 +155,14 @@ RunStats run_fda_depth_Tk_rand_bb(const System& sys,
 
         IntervalVector X = node.box;
         int depth = node.depth;
+        Interval goal_bounds = node.goal_bounds;
 
-        if (!is_valid_box(X, sys.nb_var) || X.is_empty()) {
-            if (depth < min_force_depth && X.size() == sys.nb_var) {
+        if (!is_valid_box(X, opt.sys.nb_var) || X.is_empty()) {
+            if (depth < min_force_depth && X.size() == opt.sys.nb_var) {
                 IntervalVector left(node.box.size()), right(node.box.size());
-                bisect_box(node.box, left, right);
-                active.push_back({right, depth + 1, node.T});
-                active.push_back({left, depth + 1, node.T});
+                bisect_box(opt, node.box, node.goal_bounds, left, right);
+                active.push_back({right, Interval(), depth + 1, node.T});
+                active.push_back({left, Interval(), depth + 1, node.T});
             }
             continue;
         }
@@ -164,40 +171,38 @@ RunStats run_fda_depth_Tk_rand_bb(const System& sys,
         depth_accum += depth;
         if (depth > res.max_depth) res.max_depth = depth;
 
-        contractor.contract(X);
+        contract_with_goal(opt, X, goal_bounds, UB_global);
         if (X.is_empty()) {
             if (depth < min_force_depth) {
                 IntervalVector left(node.box.size()), right(node.box.size());
-                bisect_box(node.box, left, right);
-                active.push_back({right, depth + 1, node.T});
-                active.push_back({left, depth + 1, node.T});
+                bisect_box(opt, node.box, node.goal_bounds, left, right);
+                active.push_back({right, Interval(), depth + 1, node.T});
+                active.push_back({left, Interval(), depth + 1, node.T});
             }
             continue;
         }
 
         double ub_hint = UB_global;
-        if (sys.goal) {
-            Interval f_int = sys.goal->eval(X);
-            if (!f_int.is_empty()) {
-                double f_lb = f_int.lb();
-                double f_ub = f_int.ub();
-                if (has_ub && std::isfinite(f_lb) && f_lb >= UB_global - lb_tol) continue;
-                if (std::isfinite(f_ub) && f_ub < ub_hint) ub_hint = f_ub;
-                if (!X.is_unbounded()) {
-                    double f_mid = eval_at_mid(sys, X);
-                    if (std::isfinite(f_mid) && f_mid < ub_hint) ub_hint = f_mid;
-                }
+        if (!goal_bounds.is_empty()) {
+            double f_lb = goal_bounds.lb();
+            double f_ub = goal_bounds.ub();
+            if (has_ub && std::isfinite(f_lb) && f_lb >= UB_global - lb_tol) continue;
+            if (std::isfinite(f_ub) && f_ub < ub_hint) ub_hint = f_ub;
+            if (!X.is_unbounded()) {
+                double f_mid = eval_at_mid(opt, X);
+                if (std::isfinite(f_mid) && f_mid < ub_hint) ub_hint = f_mid;
             }
         }
 
         double best_local = ub_hint;
-        RunStats local_stats = dive_depth_k_rand(sys, contractor, X,
+        RunStats local_stats = dive_depth_k_rand(opt, X,
                                                  /*base_depth=*/depth,
                                                  run_id, node.T,
                                                  k, d_max_fdive,
                                                  eps_box, max_iters_fdive,
                                                  ub_hint, best_local, rng);
         if (std::isfinite(best_local) && best_local < UB_global) {
+            UB_global_prev = UB_global;
             UB_global = best_local;
             has_ub = true;
         }
@@ -215,11 +220,13 @@ RunStats run_fda_depth_Tk_rand_bb(const System& sys,
         ++bb_nodes_processed;
 
         IntervalVector left(X.size()), right(X.size());
-        bisect_box(X, left, right);
+        bisect_box(opt, X, goal_bounds, left, right);
 
-        double T_child = k * node.T / 2.0;
-        active.push_back({right, depth + 1, T_child});
-        active.push_back({left, depth + 1, T_child});
+        double k_eff = adaptive_k(k, UB_global_prev, UB_global);
+        double T_child = k_eff * node.T / 2.0;
+        active.push_back({right, Interval(), depth + 1, T_child});
+        active.push_back({left, Interval(), depth + 1, T_child});
+        UB_global_prev = UB_global;
     }
 
     if (res.nodes_visited > 0) {

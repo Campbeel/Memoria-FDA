@@ -8,9 +8,8 @@
 using namespace ibex;
 using namespace std;
 
-// Subproceso de Feasible Diving base (Algoritmo 3) sobre una caja inicial.
-RunStats dive_base(const System& sys,
-                   Ctc& contractor,
+// Subproceso de Feasible Diving base: siempre baja el hijo con mejor score.
+RunStats dive_base(OptContext& opt,
                    const IntervalVector& start_box,
                    int run_id,
                    int base_depth,
@@ -30,39 +29,39 @@ RunStats dive_base(const System& sys,
     long depth_accum = 0;
 
     double UB = UB_global_in;
+    Interval goal_bounds;
 
     for (int it = 0; it < max_iters; ++it) {
         res.nodes_visited++;
         depth_accum += depth;
         if (depth > res.max_depth) res.max_depth = depth;
 
-        contractor.contract(X);
-        if (X.is_empty()) {
-            break;
-        }
+        contract_with_goal(opt, X, goal_bounds, UB);
+        if (X.is_empty()) break;
 
-        if (sys.goal) {
-            Interval f_int = sys.goal->eval(X);
-            (void)f_int;
-            double f_mid = eval_at_mid(sys, X);
+        if (opt.sys.goal && !goal_bounds.is_empty()) {
+            double f_ub = goal_bounds.ub();
+            if (std::isfinite(f_ub) && f_ub < UB) UB = f_ub;
+            double f_mid = eval_at_mid(opt, X);
             if (f_mid < UB) UB = f_mid;
         }
 
-        // parada por tamaño de caja
-        if (X.max_diam() < eps_box) {
-            res.reached_optimum = true;
-            break;
-        }
+        // parada por tamaño de caja (solo si ya bajamos al menos un nivel)
+        if (depth > base_depth && X.max_diam() < eps_box) break;
 
         IntervalVector left(X.size()), right(X.size());
-        bisect_box(X, left, right);
-        double scoreL = heur_diving_score(sys, left);
-        double scoreR = heur_diving_score(sys, right);
+        bisect_box(opt, X, goal_bounds, left, right);
+
+        // No contratamos antes de elegir: evitamos podar prematuramente.
+        double scoreL = heur_diving_score(opt, left, Interval());
+        double scoreR = heur_diving_score(opt, right, Interval());
 
         if (scoreL >= scoreR) {
             X = left;
+            goal_bounds = Interval();
         } else {
             X = right;
+            goal_bounds = Interval();
         }
         depth++;
     }
@@ -76,26 +75,25 @@ RunStats dive_base(const System& sys,
         std::chrono::duration<double>(t1 - t0).count();
 
     res.best_value = UB;
+    res.reached_optimum = std::isfinite(UB);
     best_value_out = UB;
     return res;
 }
 
-RunStats run_fda_base(const System& sys,
-                      Ctc& contractor,
+RunStats run_fda_base(OptContext& opt,
                       const IntervalVector& root_box,
                       int run_id,
                       double eps_box,
                       int max_iters)
 {
     double best_value = std::numeric_limits<double>::infinity();
-    return dive_base(sys, contractor, root_box, run_id,
+    return dive_base(opt, root_box, run_id,
                      /*base_depth=*/0,
                      eps_box, max_iters, best_value, best_value);
 }
 
 // B&B sencillo pero acumulando las iteraciones del FD interno.
-RunStats run_fda_base_bb(const System& sys,
-                         Ctc& contractor,
+RunStats run_fda_base_bb(OptContext& opt,
                          const IntervalVector& root_box,
                          int run_id,
                          double eps_box,
@@ -111,7 +109,7 @@ RunStats run_fda_base_bb(const System& sys,
     auto t0 = std::chrono::high_resolution_clock::now();
 
     std::vector<BbNode> active;
-    active.push_back({root_box, 0, 0.0});
+    active.push_back({root_box, Interval(), 0, 0.0});
 
     double UB_global = std::numeric_limits<double>::infinity();
     bool   has_ub    = false;
@@ -126,13 +124,14 @@ RunStats run_fda_base_bb(const System& sys,
 
         IntervalVector X = node.box;
         int depth = node.depth;
+        Interval goal_bounds = node.goal_bounds;
 
-        if (!is_valid_box(X, sys.nb_var) || X.is_empty()) {
-            if (depth < min_force_depth && X.size() == sys.nb_var) {
+        if (!is_valid_box(X, opt.sys.nb_var) || X.is_empty()) {
+            if (depth < min_force_depth && X.size() == opt.sys.nb_var) {
                 IntervalVector left(X.size()), right(X.size());
-                bisect_box(node.box, left, right);
-                active.push_back({right, depth + 1, 0.0});
-                active.push_back({left, depth + 1, 0.0});
+                bisect_box(opt, node.box, node.goal_bounds, left, right);
+                active.push_back({right, Interval(), depth + 1, 0.0});
+                active.push_back({left, Interval(), depth + 1, 0.0});
             }
             continue;
         }
@@ -141,34 +140,31 @@ RunStats run_fda_base_bb(const System& sys,
         depth_accum += depth;
         if (depth > res.max_depth) res.max_depth = depth;
 
-        contractor.contract(X);
+        contract_with_goal(opt, X, goal_bounds, UB_global);
         if (X.is_empty()) {
             if (depth < min_force_depth) {
                 IntervalVector left(node.box.size()), right(node.box.size());
-                bisect_box(node.box, left, right);
-                active.push_back({right, depth + 1, 0.0});
-                active.push_back({left, depth + 1, 0.0});
+                bisect_box(opt, node.box, node.goal_bounds, left, right);
+                active.push_back({right, Interval(), depth + 1, 0.0});
+                active.push_back({left, Interval(), depth + 1, 0.0});
             }
             continue;
         }
 
         double ub_hint = UB_global;
-        if (sys.goal) {
-            Interval f_int = sys.goal->eval(X);
-            if (!f_int.is_empty()) {
-                double f_lb = f_int.lb();
-                double f_ub = f_int.ub();
-                if (has_ub && std::isfinite(f_lb) && f_lb >= UB_global - lb_tol) continue;
-                if (std::isfinite(f_ub) && f_ub < ub_hint) ub_hint = f_ub;
-                if (!X.is_unbounded()) {
-                    double f_mid = eval_at_mid(sys, X);
-                    if (std::isfinite(f_mid) && f_mid < ub_hint) ub_hint = f_mid;
-                }
+        if (!goal_bounds.is_empty()) {
+            double f_lb = goal_bounds.lb();
+            double f_ub = goal_bounds.ub();
+            if (has_ub && std::isfinite(f_lb) && f_lb >= UB_global - lb_tol) continue;
+            if (std::isfinite(f_ub) && f_ub < ub_hint) ub_hint = f_ub;
+            if (!X.is_unbounded()) {
+                double f_mid = eval_at_mid(opt, X);
+                if (std::isfinite(f_mid) && f_mid < ub_hint) ub_hint = f_mid;
             }
         }
 
         double best_local = ub_hint;
-        RunStats local_stats = dive_base(sys, contractor, X,
+        RunStats local_stats = dive_base(opt, X,
                                          run_id, depth,
                                          eps_box, max_iters_fdive,
                                          ub_hint, best_local);
@@ -191,10 +187,10 @@ RunStats run_fda_base_bb(const System& sys,
         ++bb_nodes_processed;
 
         IntervalVector left(X.size()), right(X.size());
-        bisect_box(X, left, right);
+        bisect_box(opt, X, goal_bounds, left, right);
 
-        active.push_back({right, depth + 1, 0.0});
-        active.push_back({left, depth + 1, 0.0});
+        active.push_back({right, Interval(), depth + 1, 0.0});
+        active.push_back({left, Interval(), depth + 1, 0.0});
     }
 
     auto t1 = std::chrono::high_resolution_clock::now();
