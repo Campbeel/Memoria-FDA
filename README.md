@@ -23,7 +23,8 @@ Esto genera los binarios:
 - `fda_bridge_ibex` (ejecutor multiparámetro)
 
 ## Ejecución de variantes individuales
-Formato: `./<binario> ruta/al/problema.bch [num_runs]`
+Formato: `./<binario> ruta/al/problema.bch [num_runs] [output.csv]`
+Si no quieres indicar `num_runs`, puedes pasar solo `output.csv` como tercer argumento (usa 1 run por defecto). El archivo se sobrescribe.
 
 Ejemplos:
 ```bash
@@ -31,6 +32,7 @@ cd memoria_cofigo/build
 
 # Base
 ./fda_run_base ../casos/medium/alkyl.bch 3
+./fda_run_base ../casos/medium/alkyl.bch resultados_base.csv
 
 # Profundidad + temperatura determinista
 ./fda_run_depth_k ../casos/medium/alkyl.bch 3
@@ -45,12 +47,14 @@ cd memoria_cofigo/build
 ./fda_run_vol_k_rand ../casos/medium/alkyl.bch 3
 ```
 
-La salida es CSV: `run,variant,best_value,nodes,elapsed,max_depth,avg_depth,optimal`.
+La salida es CSV: `run,variant,best_value,nodes,elapsed,max_depth,avg_depth,optimal`. Si no se indica archivo, sigue imprimiendo a `stdout` (puedes redirigir con `>`).
 
 ## Ejecución con bridge (todas las variantes en un binario)
-`fda_bridge_ibex` permite elegir variante por nombre:
+`fda_bridge_ibex` permite elegir variante por nombre (`./fda_bridge_ibex problema.bch variante [num_runs] [output.csv]`):
 ```bash
 ./fda_bridge_ibex ../casos/medium/alkyl.bch depth_k 5
+# run único directo a CSV
+./fda_bridge_ibex ../casos/medium/alkyl.bch vol_k_rand resultados_vol.csv
 ```
 Variantes disponibles: `base`, `base_bb`, `depth_k`, `depth_k_bb`, `depth_k_rand`, `depth_k_rand_bb`, `vol_k`, `vol_k_bb`, `vol_k_rand`, `vol_k_rand_bb`.
 

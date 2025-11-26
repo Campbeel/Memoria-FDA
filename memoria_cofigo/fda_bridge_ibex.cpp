@@ -5,17 +5,17 @@
 // Implementaciones separadas por archivo para facilitar mantenimiento.
 //
 // Uso típico:
-//   ./fda_bridge_ibex problema.bch base          > salida.csv
-//   ./fda_bridge_ibex problema.bch depth_k      >> salida.csv
-//   ./fda_bridge_ibex problema.bch depth_k_rand >> salida.csv
-//   ./fda_bridge_ibex problema.bch vol_k        >> salida.csv
-//   ./fda_bridge_ibex problema.bch vol_k_rand   >> salida.csv
+//   ./fda_bridge_ibex problema.bch base [num_runs] [output.csv]
+//   ./fda_bridge_ibex problema.bch depth_k 5 resultados.csv
+//   ./fda_bridge_ibex problema.bch depth_k_rand > salida.csv   # sigue funcionando la redirección
+//   ./fda_bridge_ibex problema.bch vol_k_rand                # imprime en stdout si no se da archivo
 //
 // Columna CSV:
 // run,variant,best_value,nodes,elapsed,max_depth,avg_depth,optimal
 
 #include "fda_bridge_common.h"
 #include <chrono>
+#include <fstream>
 #include <iostream>
 #include <random>
 #include <string>
@@ -25,14 +25,23 @@ using namespace std;
 int main(int argc, char** argv) {
     if (argc < 3) {
         cerr << "Uso: " << argv[0]
-             << " problema.bch variante [num_runs]\n"
+             << " problema.bch variante [num_runs] [output.csv]\n"
              << " variantes: base | base_bb | depth_k | depth_k_bb | depth_k_rand | depth_k_rand_bb | vol_k | vol_k_bb | vol_k_rand | vol_k_rand_bb\n";
         return 1;
     }
 
     std::string bch_file = argv[1];
     std::string variant  = argv[2];
-    int num_runs = (argc >= 4) ? std::atoi(argv[3]) : 1;
+    int num_runs = 1;
+    std::string output_path;
+
+    if (argc >= 4) {
+        if (parse_int_arg(argv[3], num_runs)) {
+            if (argc >= 5) output_path = argv[4];
+        } else {
+            output_path = argv[3];
+        }
+    }
 
     System sys(bch_file.c_str());
     OptContext opt(sys);
@@ -47,7 +56,18 @@ int main(int argc, char** argv) {
     double eps_V     = 1e-4;
     double beta      = 0.1;
 
-    cout << "run,variant,best_value,nodes,elapsed,max_depth,avg_depth,optimal\n";
+    std::ofstream file_out;
+    std::ostream* out = &cout;
+    if (!output_path.empty()) {
+        file_out.open(output_path);
+        if (!file_out) {
+            std::cerr << "[ERROR] No se pudo abrir " << output_path << " para escritura\n";
+            return 1;
+        }
+        out = &file_out;
+    }
+
+    *out << "run,variant,best_value,nodes,elapsed,max_depth,avg_depth,optimal\n";
 
     for (int r = 0; r < num_runs; ++r) {
         std::mt19937 rng(123456u + r);
@@ -112,7 +132,7 @@ int main(int argc, char** argv) {
             return 1;
         }
 
-        cout << stats.run_id          << ","
+        *out << stats.run_id          << ","
              << stats.variant         << ","
              << stats.best_value      << ","
              << stats.nodes_visited   << ","

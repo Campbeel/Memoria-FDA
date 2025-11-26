@@ -3,6 +3,7 @@
 // Implementación de utilidades compartidas.
 
 #include "fda_bridge_common.h"
+#include <cstdlib>
 
 using namespace ibex;
 using namespace std;
@@ -93,5 +94,16 @@ bool is_valid_box(const IntervalVector& box, int expected_dim) {
             return false;
         }
     }
+    return true;
+}
+
+bool parse_int_arg(const char* text, int& value) {
+    if (!text) return false;
+    char* endptr = nullptr;
+    long parsed = std::strtol(text, &endptr, 10);
+    if (endptr == text || *endptr != '\0') {
+        return false;
+    }
+    value = static_cast<int>(parsed);
     return true;
 }

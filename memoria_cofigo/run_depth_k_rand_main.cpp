@@ -3,6 +3,7 @@
 
 #include "fda_bridge_common.h"
 #include <chrono>
+#include <fstream>
 #include <iostream>
 #include <random>
 #include <string>
@@ -12,11 +13,20 @@ using namespace std;
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        cerr << "Uso: " << argv[0] << " problema.bch [num_runs]\n";
+        cerr << "Uso: " << argv[0] << " problema.bch [num_runs] [output.csv]\n";
         return 1;
     }
     std::string bch_file = argv[1];
-    int num_runs = (argc >= 3) ? std::atoi(argv[2]) : 1;
+    int num_runs = 1;
+    std::string output_path;
+
+    if (argc >= 3) {
+        if (parse_int_arg(argv[2], num_runs)) {
+            if (argc >= 4) output_path = argv[3];
+        } else {
+            output_path = argv[2];
+        }
+    }
 
     try {
         System sys(bch_file.c_str());
@@ -29,12 +39,23 @@ int main(int argc, char** argv) {
         double k         = 0.5;
         int    d_max     = 100;
 
-        cout << "run,variant,best_value,nodes,elapsed,max_depth,avg_depth,optimal\n";
+        std::ofstream file_out;
+        std::ostream* out = &cout;
+        if (!output_path.empty()) {
+            file_out.open(output_path);
+            if (!file_out) {
+                std::cerr << "[ERROR] No se pudo abrir " << output_path << " para escritura\n";
+                return 1;
+            }
+            out = &file_out;
+        }
+
+        *out << "run,variant,best_value,nodes,elapsed,max_depth,avg_depth,optimal\n";
         for (int r = 0; r < num_runs; ++r) {
             std::mt19937 rng(123456u + r);
             RunStats stats = run_fda_depth_Tk_rand(opt, root_box, r, T0, k,
                                                    d_max, eps_box, max_iters, rng);
-            cout << stats.run_id          << ","
+            *out << stats.run_id          << ","
                  << stats.variant         << ","
                  << stats.best_value      << ","
                  << stats.nodes_visited   << ","

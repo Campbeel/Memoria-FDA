@@ -54,6 +54,9 @@ void bisect_box(OptContext& opt,
 double eval_at_mid(const OptContext& opt, const ibex::IntervalVector& box);
 bool is_valid_box(const ibex::IntervalVector& box, int expected_dim);
 
+// Utilidad ligera para detectar si un argumento es entero (uso de CLI).
+bool parse_int_arg(const char* text, int& value);
+
 // Interfaces públicas de cada variante.
 RunStats run_fda_base(OptContext& opt,
                       const ibex::IntervalVector& root_box,
