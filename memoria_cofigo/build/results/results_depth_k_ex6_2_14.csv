@@ -1,0 +1,4 @@
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal
+2,depth_k,ex6_2_14.bch,-0.695358,4896,1.77064,NA,NA,1
+1,depth_k,ex6_2_14.bch,-0.695358,4896,1.77068,NA,NA,1
+0,depth_k,ex6_2_14.bch,-0.695358,4896,1.77971,NA,NA,1

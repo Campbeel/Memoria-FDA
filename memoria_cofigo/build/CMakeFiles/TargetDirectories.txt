@@ -1,0 +1,5 @@
+/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles/ibex_opt_base.dir
+/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles/ibex_opt_full.dir
+/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles/ibex_menu.dir
+/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles/edit_cache.dir
+/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles/rebuild_cache.dir

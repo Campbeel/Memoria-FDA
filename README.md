@@ -1,6 +1,6 @@
 # Memoria FDA + IBEX
 
-Guía rápida para compilar y ejecutar las variantes de Feasible Diving (FDA) integradas con IBEX.
+Guía rápida para compilar y ejecutar Ibex con los modos FD (`--fd-mode`) integrados en `ibex_opt_full`.
 
 ## Prerrequisitos
 - IBEX ya compilado en `~/ibex-lib` (este repo).
@@ -15,53 +15,66 @@ cmake -S . -B build
 cmake --build build -j4
 ```
 Esto genera los binarios:
-- `fda_run_base`
-- `fda_run_depth_k`
-- `fda_run_depth_k_rand`
-- `fda_run_vol_k`
-- `fda_run_vol_k_rand`
-- `fda_bridge_ibex` (ejecutor multiparámetro)
+- `ibex_opt_full` (original de Ibex con soporte `--fd-mode`)
+- `ibex_opt_base` (optimizador base sin LP/XTaylor; útil si `ibexopt` se cae con CLP)
+- `ibex_menu` (menú interactivo que llama a `ibex_opt_full` con el modo elegido)
 
-## Ejecución de variantes individuales
-Formato: `./<binario> ruta/al/problema.bch [num_runs] [output.csv]`
-Si no quieres indicar `num_runs`, puedes pasar solo `output.csv` como tercer argumento (usa 1 run por defecto). El archivo se sobrescribe.
+### Rutas estándar (ajusta en tu entorno)
+Por defecto el `CMakeLists.txt` asume:
+- `IBEX_ROOT=~/ibex-lib`
+- `IBEX_BUILD_DIR=~/ibex-lib/build-soplex`
+- `SOPLEX_LIB=/usr/lib/x86_64-linux-gnu/libsoplex.a`
 
-Ejemplos:
+En otro host, sobreescribe al configurar:
 ```bash
-cd memoria_cofigo/build
-
-# Base
-./fda_run_base ../casos/medium/alkyl.bch 3
-./fda_run_base ../casos/medium/alkyl.bch resultados_base.csv
-
-# Profundidad + temperatura determinista
-./fda_run_depth_k ../casos/medium/alkyl.bch 3
-
-# Profundidad + temperatura con ruido
-./fda_run_depth_k_rand ../casos/medium/alkyl.bch 3
-
-# Volumen + temperatura determinista
-./fda_run_vol_k ../casos/medium/alkyl.bch 3
-
-# Volumen + temperatura con ruido
-./fda_run_vol_k_rand ../casos/medium/alkyl.bch 3
+cmake -S . -B build \
+  -DIBEX_ROOT=/ruta/a/ibex \
+  -DIBEX_BUILD_DIR=/ruta/a/ibex/build-soplex \
+  -DSOPLEX_LIB=/ruta/a/libsoplex.a
 ```
 
-La salida es CSV: `run,variant,best_value,nodes,elapsed,max_depth,avg_depth,optimal`. Si no se indica archivo, sigue imprimiendo a `stdout` (puedes redirigir con `>`).
-
-## Ejecución con bridge (todas las variantes en un binario)
-`fda_bridge_ibex` permite elegir variante por nombre (`./fda_bridge_ibex problema.bch variante [num_runs] [output.csv]`):
+### Cómo obtener SoPlex (recomendado) dentro de tu árbol de Ibex
+1) Descarga SoPlex (ZIB Academic License) desde https://soplex.zib.de/.
+2) Compílalo y obtén `libsoplex.a`. Ejemplo rápido:
 ```bash
-./fda_bridge_ibex ../casos/medium/alkyl.bch depth_k 5
-# run único directo a CSV
-./fda_bridge_ibex ../casos/medium/alkyl.bch vol_k_rand resultados_vol.csv
+tar xf soplex-*.tar.gz
+cd soplex-*
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j4
+cp build/libsoplex.a /ruta/a/ibex/build-soplex/lib/   # o donde prefieras
 ```
-Variantes disponibles: `base`, `base_bb`, `depth_k`, `depth_k_bb`, `depth_k_rand`, `depth_k_rand_bb`, `vol_k`, `vol_k_bb`, `vol_k_rand`, `vol_k_rand_bb`.
+3) Reconfigura Ibex con SoPlex:
+```bash
+cd /ruta/a/ibex
+cmake -S . -B build-soplex -DLP_LIB=soplex -DUSE_SOPLEX=ON
+cmake --build build-soplex -j4
+```
+4) Reconfigura `memoria_cofigo` apuntando a esas rutas (ver comando arriba).
 
-## Parámetros internos (hardcodeados)
-- `eps_box = 1e-9`
-- `max_iters = 100000`
-- Profundidad/temperatura: `T0=10`, `k=0.5`, `d_max=100`
-- Volumen: `eps_V=1e-4`, `beta=0.1`, `depth_vol>=5` antes de cortar por volumen
+Si no quieres/puedes usar SoPlex, puedes compilar Ibex con CLP y pasar `-DSOPLEX_LIB=` para omitirlo, pero perderás la mitigación del bug de CLP.
 
-Ajusta en los `.cpp` si necesitas otros valores por defecto.
+## Ejecución directa (ibex_opt_full)
+Formato general: `./ibex_opt_full problema.bch [opciones]`
+
+Modos FD disponibles:
+- Base (sin flag): `./ibex_opt_full ../casos/medium/ex6_2_14.bch`
+- Profundidad determinista: `./ibex_opt_full ../casos/medium/ex6_2_14.bch --fd-mode=depth_k`
+- Profundidad aleatoria: `./ibex_opt_full ../casos/medium/ex6_2_14.bch --fd-mode=depth_k_rand`
+- Volumen determinista: `./ibex_opt_full ../casos/medium/ex6_2_14.bch --fd-mode=vol_k`
+- Volumen aleatoria: `./ibex_opt_full ../casos/medium/ex6_2_14.bch --fd-mode=vol_k_rand`
+
+La salida es el reporte estándar de IbexOpt.
+
+### Optimización base (sin CLP)
+`ibex_opt_base` evita el loup XTaylor/CLP y suele ser más robusto:
+```bash
+./ibex_opt_base ../casos/medium/alkyl.bch [rel_eps_f] [abs_eps_f]
+```
+Los eps son opcionales (por defecto usa los de Ibex). Para problemas grandes puede tardar más que `ibexopt`, pero no se cae por el bug de CLP.
+
+## Menú interactivo
+`ibex_menu` permite elegir variante y problema (.bch) sin recordar las flags:
+```bash
+./ibex_menu
+```
+Las opciones del menú disparan `ibex_opt_full` con el `--fd-mode` correspondiente.

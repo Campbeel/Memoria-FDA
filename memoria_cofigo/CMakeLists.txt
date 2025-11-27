@@ -6,6 +6,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # === Ruta base de IBEX (ajusta si la tienes en otra carpeta) ===
 set(IBEX_ROOT "/home/benjamin-mu-oz/ibex-lib")
+# Build de Ibex con SoPlex (para evitar crash de CLP)
+set(IBEX_BUILD_DIR "${IBEX_ROOT}/build-soplex")
+# Usa la lib SoPlex instalada en el sistema (evita depender del build interno).
+set(SOPLEX_LIB "/usr/lib/x86_64-linux-gnu/libsoplex.a")
 
 # === Recolectar automáticamente TODOS los subdirectorios de IBEX ===
 file(GLOB IBEX_ALL_DIRS
@@ -13,6 +17,8 @@ file(GLOB IBEX_ALL_DIRS
     "${IBEX_ROOT}/src/*"
     "${IBEX_ROOT}/build/src"
     "${IBEX_ROOT}/build/src/*"
+    "${IBEX_BUILD_DIR}/src"
+    "${IBEX_BUILD_DIR}/src/*"
     "${IBEX_ROOT}/3rd"
     "${IBEX_ROOT}/3rd/*"
     "${IBEX_ROOT}/plugins"
@@ -50,42 +56,19 @@ include_directories(
 
 # Librerías compiladas de IBEX (+ gaol / Mathlib instaladas por IBEX)
 link_directories(
-    ${IBEX_ROOT}/build/src
+    ${IBEX_BUILD_DIR}/src
     /usr/local/lib
     /usr/local/lib/ibex/3rd
 )
 
-# === Ejecutable de experimentos sintéticos ===
-add_executable(fda_experimentos
-    fda_experimentos.cpp
-)
-target_link_libraries(fda_experimentos ibex)
+set(MEMORIA_LIBS ibex gaol ultim ${SOPLEX_LIB} soplex gmp gmpxx z)
 
-# Ejecutables individuales por variante (sin el bridge).
-add_executable(fda_run_base run_base_main.cpp fda_bridge_common.cpp FD_base.cpp)
-target_link_libraries(fda_run_base ibex gaol ultim Clp CoinUtils)
+add_executable(ibex_opt_base ibex_opt_base.cpp)
+target_link_libraries(ibex_opt_base ${MEMORIA_LIBS} Clp CoinUtils)
 
-add_executable(fda_run_depth_k run_depth_k_main.cpp fda_bridge_common.cpp FDA_depth_k.cpp)
-target_link_libraries(fda_run_depth_k ibex gaol ultim Clp CoinUtils)
+# Ejecutable "ibexopt" original (clonado de src/bin/ibexopt.cpp)
+add_executable(ibex_opt_full ibex_opt_full.cpp)
+target_link_libraries(ibex_opt_full ${MEMORIA_LIBS} Clp CoinUtils)
 
-add_executable(fda_run_depth_k_rand run_depth_k_rand_main.cpp fda_bridge_common.cpp FDA_depth_k_rand.cpp)
-target_link_libraries(fda_run_depth_k_rand ibex gaol ultim Clp CoinUtils)
-
-add_executable(fda_run_vol_k run_vol_k_main.cpp fda_bridge_common.cpp FDA_vol_k.cpp)
-target_link_libraries(fda_run_vol_k ibex gaol ultim Clp CoinUtils)
-
-add_executable(fda_run_vol_k_rand run_vol_k_rand_main.cpp fda_bridge_common.cpp FDA_vol_k_rand.cpp)
-target_link_libraries(fda_run_vol_k_rand ibex gaol ultim Clp CoinUtils)
-
-# === Ejecutable puente IBEX + FDA ===
-add_executable(fda_bridge_ibex
-    fda_bridge_common.cpp
-    FD_base.cpp
-    FDA_depth_k.cpp
-    FDA_depth_k_rand.cpp
-    FDA_vol_k.cpp
-    FDA_vol_k_rand.cpp
-    fda_bridge_ibex.cpp
-)
-# enlazar también contra CLP y CoinUtils (solver LP que usa IBEX)
-target_link_libraries(fda_bridge_ibex ibex gaol ultim Clp CoinUtils)
+add_executable(ibex_menu run_menu.cpp)
+target_link_libraries(ibex_menu pthread)

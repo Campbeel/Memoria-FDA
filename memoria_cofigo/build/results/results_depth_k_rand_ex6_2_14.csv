@@ -1,0 +1,4 @@
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal
+0,depth_k_rand,ex6_2_14.bch,-0.695358,4896,1.77722,NA,NA,1
+1,depth_k_rand,ex6_2_14.bch,-0.695358,4896,1.77696,NA,NA,1
+2,depth_k_rand,ex6_2_14.bch,-0.695358,4896,1.78506,NA,NA,1
