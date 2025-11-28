@@ -1,0 +1,11 @@
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers
+1,vol_k,bearing.bch,1.95111,5380,6.62351,NA,NA,1,0
+4,vol_k,bearing.bch,1.95111,10354,11.4902,NA,NA,1,0
+3,vol_k,bearing.bch,1.95114,10630,11.609,NA,NA,1,0
+0,vol_k,bearing.bch,1.95119,12256,12.7911,NA,NA,1,0
+2,vol_k,bearing.bch,1.95111,11872,12.8063,NA,NA,1,0
+6,vol_k,bearing.bch,1.95111,12134,13.5292,NA,NA,1,0
+9,vol_k,bearing.bch,1.95115,10784,11.0064,NA,NA,1,0
+8,vol_k,bearing.bch,1.95119,14928,13.851,NA,NA,1,0
+7,vol_k,bearing.bch,1.95116,16476,15.5483,NA,NA,1,0
+5,vol_k,bearing.bch,1.95114,31992,28.0393,NA,NA,1,0

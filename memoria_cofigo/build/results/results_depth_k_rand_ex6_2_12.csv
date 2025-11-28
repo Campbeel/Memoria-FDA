@@ -1,0 +1,11 @@
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal
+1,depth_k_rand,ex6_2_12.bch,0.289195,30336,9.19124,NA,NA,1
+2,depth_k_rand,ex6_2_12.bch,0.289195,30336,9.21578,NA,NA,1
+5,depth_k_rand,ex6_2_12.bch,0.289195,30336,9.22531,NA,NA,1
+4,depth_k_rand,ex6_2_12.bch,0.289195,30336,9.22806,NA,NA,1
+0,depth_k_rand,ex6_2_12.bch,0.289195,30336,9.25508,NA,NA,1
+3,depth_k_rand,ex6_2_12.bch,0.289195,30336,9.44388,NA,NA,1
+8,depth_k_rand,ex6_2_12.bch,0.289195,29000,8.72015,NA,NA,1
+9,depth_k_rand,ex6_2_12.bch,0.289195,29000,8.73811,NA,NA,1
+6,depth_k_rand,ex6_2_12.bch,0.289195,29000,8.77759,NA,NA,1
+7,depth_k_rand,ex6_2_12.bch,0.289195,29000,8.76641,NA,NA,1

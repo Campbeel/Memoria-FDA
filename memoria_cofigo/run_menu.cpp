@@ -23,14 +23,15 @@ struct VariantInfo {
     string name;
     string binary;
     string fd_mode; // opcional: modo FD para ibex_opt_full
+    double timeout = 0.0; // timeout opcional en segundos
 };
 
 static const VariantInfo kVariants[] = {
-    {"base",        "./ibex_opt_full",      ""            },
-    {"vol_k",       "./ibex_opt_full",      "vol_k"       },
-    {"vol_k_rand",  "./ibex_opt_full",      "vol_k_rand"  },
-    {"depth_k",     "./ibex_opt_full",      "depth_k"     },
-    {"depth_k_rand","./ibex_opt_full",      "depth_k_rand"}
+    {"base",        "./ibex_opt_full",      "",           0.0    },
+    {"vol_k",       "./ibex_opt_full",      "vol_k",      1800.0 },
+    {"vol_k_rand",  "./ibex_opt_full",      "vol_k_rand", 1800.0 },
+    {"depth_k",     "./ibex_opt_full",      "depth_k",    0.0    },
+    {"depth_k_rand","./ibex_opt_full",      "depth_k_rand",0.0   }
 };
 
 // Ejecuta ibex_opt_full y extrae nodos, tiempo, loup; formato CSV.
@@ -43,6 +44,7 @@ string run_ibex_base(const string& cmd, const string& variant, int run_id) {
     long nodes = -1;
     double elapsed = 0.0;
     bool optimal = false;
+    long triggers = -1;
     while (fgets(buf, sizeof(buf), pipe)) {
         line = buf;
         if (line.find("nodes (cells):") != string::npos) {
@@ -56,17 +58,40 @@ string run_ibex_base(const string& cmd, const string& variant, int run_id) {
             }
         } else if (line.find("optimization successful") != string::npos) {
             optimal = true;
+        } else if (line.find("fd_triggers:") != string::npos || line.find("triggers_csv:") != string::npos) {
+            // Captura genérica sin depender de espacios exactos.
+            size_t pos = line.find("fd_triggers:");
+            int offset = 12;
+            if (pos == string::npos) {
+                pos = line.find("triggers_csv:");
+                offset = 13;
+            }
+            if (pos != string::npos) {
+                try {
+                    long t = stol(line.substr(pos + offset));
+                    triggers = t;
+                } catch(...) {}
+            }
         }
     }
     pclose(pipe);
-    // CSV: run,variant,best_value,nodes,elapsed,max_depth,avg_depth,optimal
+        // CSV: run,variant,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers
     stringstream ss;
     ss << run_id << "," << variant << "," << best << "," << nodes << "," << elapsed
-       << ",NA,NA," << (optimal ? 1 : 0);
+       << ",NA,NA," << (optimal ? 1 : 0) << ",";
+    if (triggers>=0) ss << triggers; else ss << "0";
     return ss.str();
 }
 
 int main() {
+    auto now_str = []() {
+        auto now = chrono::system_clock::now();
+        time_t tt = chrono::system_clock::to_time_t(now);
+        char buf[64];
+        strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", localtime(&tt));
+        return string(buf);
+    };
+
     cout << "Selecciona variante:\n";
     for (size_t i = 0; i < sizeof(kVariants)/sizeof(kVariants[0]); ++i) {
         cout << " " << (i+1) << ". " << kVariants[i].name << "\n";
@@ -134,79 +159,121 @@ int main() {
             }
         }
 
-        vector<string> problems = list_bchs("medium");
-        auto hard = list_bchs("hard");
-        problems.insert(problems.end(), hard.begin(), hard.end());
-        if (problems.empty()) {
+        vector<string> medium = list_bchs("medium");
+        vector<string> hard = list_bchs("hard");
+        // Si existe ex17_2_7.bch en cualquier carpeta, agrégalo.
+        for (const auto& p : {fs::path("..")/"casos"/"medium"/"ex17_2_7.bch",
+                              fs::path("..")/"casos"/"hard"/"ex17_2_7.bch"}) {
+            if (fs::exists(p)) medium.push_back(p.string());
+        }
+        // Excluir casos muy lentos si molestan en el barrido.
+        const vector<string> exclude = {"ex14_2_7.bch"};
+        auto apply_exclude = [&](vector<string>& v) {
+            v.erase(remove_if(v.begin(), v.end(), [&](const string& p) {
+                string fname = fs::path(p).filename().string();
+                return find(exclude.begin(), exclude.end(), fname) != exclude.end();
+            }), v.end());
+        };
+        apply_exclude(medium);
+        apply_exclude(hard);
+        sort(medium.begin(), medium.end());
+        medium.erase(unique(medium.begin(), medium.end()), medium.end());
+        sort(hard.begin(), hard.end());
+        hard.erase(unique(hard.begin(), hard.end()), hard.end());
+        if (medium.empty() && hard.empty()) {
             cerr << "No se encontraron problemas en casos/medium ni casos/hard\n";
             return 1;
         }
 
+        cout << "¿Qué subconjunto quieres correr?\n";
+        cout << " 1) Solo medium\n";
+        cout << " 2) Solo hard\n";
+        cout << " 3) Medium y luego hard\n";
+        int subset = 3;
+        cout << "Opcion: ";
+        cin >> subset;
+        bool run_medium = (subset == 1 || subset == 3);
+        bool run_hard   = (subset == 2 || subset == 3);
+        if (run_medium && medium.empty()) run_medium = false;
+        if (run_hard && hard.empty())     run_hard = false;
+        if (!run_medium && !run_hard) {
+            cerr << "Nada que correr (verifica la selección).\n";
+            return 1;
+        }
+
         fs::create_directories("results");
-        struct Task {
-            const VariantInfo* vinfo;
-            string problem;
-            int run_id;
-        };
-        vector<Task> tasks;
-        tasks.reserve(problems.size() * selected.size() * 10);
-        for (const VariantInfo* vp : selected) {
-            for (const string& prob : problems) {
-                for (int r = 0; r < 10; ++r) {
-                    tasks.push_back({vp, prob, r});
-                }
-            }
-        }
+        auto run_problem = [&](const string& prob_path) {
+            string prob_name = fs::path(prob_path).filename().string();
+            for (const VariantInfo* vp : selected) {
+                // CSV por problema y variante (se reinicia en cada problema).
+                string csv = "results/results_" + vp->name + "_" + fs::path(prob_name).stem().string() + ".csv";
+                if (fs::exists(csv)) fs::remove(csv);
+                ofstream o(csv, ios::out);
+                o << "run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers\n";
+                o.close();
 
-        const unsigned max_parallel = 10;
-        atomic<size_t> next{0};
-        mutex m;
-
-        auto worker_all = [&]() {
-            while (true) {
-                size_t idx = next.fetch_add(1);
-                if (idx >= tasks.size()) break;
-                const Task& t = tasks[idx];
-                string cmd = t.vinfo->binary + " " + t.problem;
-                if (!t.vinfo->fd_mode.empty()) {
-                    cmd += " --fd-mode=" + t.vinfo->fd_mode;
+                cout << " Ejecutando " << vp->name << " sobre " << prob_name << "...\n";
+                const int runs = 10;
+                unsigned hw = thread::hardware_concurrency();
+                unsigned max_parallel = hw ? std::max(1u, hw/2) : 4u;
+                // respetar un paralelo máximo de cores físicos si se detecta SMT (aprox hw/2)
+                if (hw > 0) {
+                    unsigned phys_approx = std::max(1u, hw/2);
+                    if (max_parallel > phys_approx) max_parallel = phys_approx;
                 }
-                string line = run_ibex_base(cmd, t.vinfo->name, t.run_id);
-
-                string prob_name = fs::path(t.problem).filename().string();
-                string csv = "results/results_" + t.vinfo->name + "_all.csv";
-                lock_guard<mutex> lk(m);
-                bool exists = fs::exists(csv);
-                ofstream o(csv, ios::app);
-                if (!exists) {
-                    o << "run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal\n";
-                }
-                if (!line.empty()) {
-                    size_t first = line.find(',');
-                    size_t second = line.find(',', first+1);
-                    if (first!=string::npos && second!=string::npos) {
-                        line.insert(second, "," + prob_name);
+                if (max_parallel > 10) max_parallel = 10;
+                // Si es un problema hard, limitar aún más el paralelismo para evitar contención.
+                bool is_hard = (prob_path.find("/hard/") != string::npos);
+                if (is_hard && max_parallel > 2) max_parallel = 2;
+                struct Task { int r; };
+                vector<Task> tasks;
+                tasks.reserve(runs);
+                for (int r=0; r<runs; ++r) tasks.push_back({r});
+                atomic<size_t> next{0};
+                mutex m;
+                auto worker = [&]() {
+                    while (true) {
+                        size_t idx = next.fetch_add(1);
+                        if (idx >= tasks.size()) break;
+                        int r = tasks[idx].r;
+                        string cmd = vp->binary + " " + prob_path;
+                        long long seed = 3000003LL + static_cast<long long>(r); // se reinicia por problema
+                        cmd += " --random-seed=" + std::to_string(seed);
+                        if (!vp->fd_mode.empty()) cmd += " --fd-mode=" + vp->fd_mode;
+                        if (vp->timeout > 0.0)   cmd += " --timeout=" + std::to_string(vp->timeout);
+                        string line = run_ibex_base(cmd, vp->name, r);
+                        lock_guard<mutex> lk(m);
+                        ofstream out(csv, ios::app);
+                        if (!line.empty()) {
+                            size_t first = line.find(',');
+                            size_t second = line.find(',', first+1);
+                            if (first!=string::npos && second!=string::npos) {
+                                line.insert(second, "," + prob_name);
+                            }
+                            out << line;
+                            if (line.back() != '\n') out << "\n";
+                        } else {
+                            out << r << "," << vp->name << "," << prob_name
+                                << ",nan,-1,-1,NA,NA,0,NA\n";
+                        }
                     }
-                    o << line;
-                    if (line.back() != '\n') o << "\n";
-                } else {
-                    o << t.run_id << "," << t.vinfo->name << "," << prob_name
-                      << ",nan,-1,-1,NA,NA,0\n";
-                }
+                };
+                vector<thread> pool;
+                for (unsigned i=0;i<max_parallel;++i) pool.emplace_back(worker);
+                for (auto& th: pool) th.join();
             }
         };
 
-        vector<thread> pool;
-        pool.reserve(max_parallel);
-        auto start_all = chrono::steady_clock::now();
-        for (unsigned i = 0; i < max_parallel; ++i) {
-            pool.emplace_back(worker_all);
+        cout << "Inicio batch: " << now_str() << "\n";
+        // Primero medium (si aplica), luego hard, secuencialmente por problema.
+        if (run_medium) {
+            for (const string& p : medium) run_problem(p);
         }
-        for (thread& th : pool) th.join();
-        auto end_all = chrono::steady_clock::now();
-        double elapsed_all = chrono::duration<double>(end_all - start_all).count();
-        cout << "Ejecuciones completas (" << tasks.size() << " corridas) en "
-             << elapsed_all << " s. Revisa results/results_<variant>_all.csv\n";
+        if (run_hard) {
+            for (const string& p : hard)   run_problem(p);
+        }
+        cout << "Fin batch: " << now_str() << "\n";
+        cout << "Listo. Revisa results/results_<variante>_<problema>.csv\n";
         return 0;
     }
 
@@ -264,8 +331,9 @@ int main() {
     fs::create_directories("results");
     string base_name = fs::path(problem).stem().string();
     string csv = "results/results_" + vinfo.name + "_" + base_name + ".csv";
+    if (fs::exists(csv)) fs::remove(csv);
     ofstream ofs(csv, ios::out);
-    ofs << "run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal\n";
+    ofs << "run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers\n";
     ofs.close();
 
     mutex m;
@@ -274,8 +342,13 @@ int main() {
 
     auto worker = [&](int idx) {
         string cmd = vinfo.binary + " " + problem;
+        long long seed = 2000003LL + static_cast<long long>(idx);
+        cmd += " --random-seed=" + std::to_string(seed);
         if (!vinfo.fd_mode.empty()) {
             cmd += " --fd-mode=" + vinfo.fd_mode;
+        }
+        if (vinfo.timeout > 0.0) {
+            cmd += " --timeout=" + std::to_string(vinfo.timeout);
         }
         string line = run_ibex_base(cmd, vinfo.name, idx);
         lock_guard<mutex> lk(m);

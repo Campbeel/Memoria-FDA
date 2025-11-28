@@ -20,6 +20,7 @@
 #include <random>
 #include <cstring>
 #include "temp_buffer.h"
+#include <filesystem>
 
 using namespace std;
 using namespace ibex;
@@ -349,6 +350,7 @@ int main(int argc, char** argv) {
 		std::unique_ptr<OptimLargestFirst> fd_bisector;
 		std::unique_ptr<Optimizer> opt_owner;
 		std::unique_ptr<TempBuffer> temp_buffer;
+		TempBuffer* temp_raw = nullptr;
 
 		if (use_fd_variant) {
 			string mode = fd_choice;
@@ -366,20 +368,103 @@ int main(int argc, char** argv) {
 				bool is_rand = (mode.find("_rand")!=string::npos);
 				bool use_depth = (mode.find("depth")!=string::npos);
 				bool use_vol   = (mode.find("vol")!=string::npos);
+
+				// Semilla base: si no dan random-seed, usamos un valor no determinista.
+				uint64_t seed = random_seed ? static_cast<uint64_t>(random_seed.Get()) : static_cast<uint64_t>(std::random_device{}());
+
+				auto u01 = [&]() {
+					static thread_local std::mt19937_64 gen(seed);
+					static thread_local std::uniform_real_distribution<double> dist(0.0,1.0);
+					return dist(gen);
+				};
+
 				TempBuffer::Params params;
-				params.k = 10.0;
-				params.bias = 1e-3;
+				// k muestreado por corrida (±20%) y con ruido de tie-break más alto
+				double k_base = 10.0;
+				double k_spread = is_rand ? 0.3 : 0.2; // más dispersión en rand
+				params.k = k_base * (1.0 + k_spread * (2.0*u01()-1.0));
+				params.k = std::max(5.0, std::min(15.0, params.k));
+				params.bias = 1e-2; // peso térmico moderado (se ajusta más abajo si dominio enorme)
 				params.T0 = 100.0;
-				params.depth_cut = use_depth ? 5 : 0;
-				params.vol_ratio_cut = use_vol ? 0.05 : 0.0;
+				// Ajustes adaptativos según el volumen inicial: dominios grandes => vol_ratio más alto, depth_cut más bajo.
+				double logV = 0.0;
+				if (V0_ref>0) logV = std::log10(std::max(1e-12, V0_ref));
+				int nv = sys->nb_var;
+				auto scale_vol = [&](double base) {
+					double v = base;
+					if (logV > 6) v *= 1.5;   // volumen enorme -> umbral más alto
+					else if (logV > 3) v *= 1.2;
+					else if (logV < -2) v *= 0.7;  // volumen pequeño -> umbral más bajo
+					if (nv > 20) v *= 1.2;         // más vars: subir umbral para explorar
+					if (nv < 8) v *= 0.9;          // pocos vars: bajar umbral
+					return v;
+				};
+				auto scale_depth = [&](int base) {
+					int d = base;
+					if (logV > 6) d = std::max(2, d-2); // dominios grandes: menos profundidad
+					else if (logV > 3) d = std::max(3, d-1);
+					else if (logV < -2) d = d+1;             // dominios pequeños: más profundidad
+					if (nv > 20) d = std::max(2, d-1);       // muchos vars: bajar profundidad
+					if (nv < 8) d = d+1;                     // pocos vars: permitir más
+					return d;
+				};
+				// depth cut muestreado por corrida (alrededor de 2-3 para disparar)
+				if (use_depth) {
+					int d = static_cast<int>(std::round(2.5 * (1.0 + 0.1 * (2.0*u01()-1.0))));
+					d = scale_depth(d);
+					params.depth_cut = std::max(2, std::min(6, d));
+					params.depth_cut_jitter = 0.1; // variación por nodo
+					params.depth_hard_cut = params.depth_cut + 3; // tope duro para evitar explosiones
+				} else {
+					params.depth_cut = 0;
+				}
+				// vol cut muestreado por corrida (alrededor de 5%)
+				if (use_vol) {
+					// Umbral medio para que dispare en medium.
+					double v = 0.1 * (1.0 + 0.1 * (2.0*u01()-1.0));
+					v = scale_vol(v);
+					params.vol_ratio_cut = std::max(0.07, std::min(0.13, v));
+					params.vol_cut_jitter = 0.1; // variación por nodo
+					params.vol_hard_ratio = 0.02; // corte duro adicional para evitar tiempos enormes
+				} else {
+					params.vol_ratio_cut = 0.0;
+				}
 				params.V0_ref = V0_ref;
 				params.depth_penalty = 1e6;
 				params.vol_penalty = 1e6;
 				params.rand_k = is_rand;
-				params.rand_seed = random_seed ? static_cast<uint64_t>(random_seed.Get()) : static_cast<uint64_t>(DefaultOptimizerConfig::default_random_seed);
+				params.rand_seed = seed;
+				params.tie_noise = 1e-3; // ruido para desempate moderado
 
-				temp_buffer.reset(new TempBuffer(ext_sys, ext_sys.goal_var(), params));
-				buffer_ptr = temp_buffer.get();
+				// Ajustes extra para dominios muy grandes: reducir ruido térmico y profundidades.
+				if (logV > 6) {
+					params.bias *= 0.1;          // menos peso térmico
+					params.tie_noise *= 0.1;     // menos ruido
+					params.vol_hard_ratio = 0.03; // corte duro moderado en volumen relativo
+					if (params.vol_ratio_cut > 0.15) params.vol_ratio_cut = 0.15;
+					if (use_depth) {
+						params.depth_cut = std::max(2, std::min(4, params.depth_cut));
+						params.depth_hard_cut = params.depth_cut + 2;
+					}
+					if (is_rand) {
+						// bajar la dispersión de k en dominios enormes para no ir a rutas muy malas
+						double kspread = 0.15;
+						params.k = k_base * (1.0 + kspread * (2.0*u01()-1.0));
+						params.k = std::max(5.0, std::min(15.0, params.k));
+					}
+				} else if (logV > 3) {
+					params.bias *= 0.3;
+					params.tie_noise *= 0.3;
+					params.vol_hard_ratio = 0.025;
+					if (params.vol_ratio_cut > 0.12) params.vol_ratio_cut = 0.12;
+				}
+
+				// Aplicamos TempBuffer a las variantes FD (depth/vol) con parámetros moderados.
+				if (use_depth || use_vol) {
+					temp_buffer.reset(new TempBuffer(ext_sys, ext_sys.goal_var(), params));
+					temp_raw = temp_buffer.get();
+					buffer_ptr = temp_raw;
+				}
 
 				opt_owner.reset(new Optimizer(
 					config.nb_var(),
@@ -434,6 +519,12 @@ int main(int argc, char** argv) {
 
 		if (!quiet)
 			o.report(); // will include statistics if they are enabled
+
+		if (temp_raw && use_fd_variant) {
+			// Línea fácil de parsear para el menú/CSV.
+			cout << "fd_triggers:" << temp_raw->trigger_count() << endl;
+			cout << "triggers_csv:" << temp_raw->trigger_count() << endl;
+		}
 
 		o.get_data().save(output_cov_file.c_str());
 

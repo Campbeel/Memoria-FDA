@@ -1,4 +1,11 @@
-run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal
-2,depth_k,ex6_2_14.bch,-0.695358,4896,1.77064,NA,NA,1
-1,depth_k,ex6_2_14.bch,-0.695358,4896,1.77068,NA,NA,1
-0,depth_k,ex6_2_14.bch,-0.695358,4896,1.77971,NA,NA,1
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers
+4,depth_k,ex6_2_14.bch,-0.695358,4842,1.75734,NA,NA,1,0
+1,depth_k,ex6_2_14.bch,-0.695358,4842,1.75907,NA,NA,1,0
+5,depth_k,ex6_2_14.bch,-0.695358,4842,1.7664,NA,NA,1,0
+0,depth_k,ex6_2_14.bch,-0.695358,4842,1.77685,NA,NA,1,0
+3,depth_k,ex6_2_14.bch,-0.695358,4842,1.77955,NA,NA,1,0
+2,depth_k,ex6_2_14.bch,-0.695358,4842,1.82225,NA,NA,1,0
+7,depth_k,ex6_2_14.bch,-0.695358,4850,1.70693,NA,NA,1,0
+8,depth_k,ex6_2_14.bch,-0.695358,4850,1.70386,NA,NA,1,0
+9,depth_k,ex6_2_14.bch,-0.695358,4850,1.71281,NA,NA,1,0
+6,depth_k,ex6_2_14.bch,-0.695358,4850,1.73486,NA,NA,1,0

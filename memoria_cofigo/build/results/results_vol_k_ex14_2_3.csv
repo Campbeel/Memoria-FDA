@@ -1,0 +1,10 @@
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers
+0,vol_k,ex14_2_3.bch,1.29512e-09,8418,6.43523,NA,NA,1,0
+5,vol_k,ex14_2_3.bch,1.27962e-09,11074,8.19938,NA,NA,1,0
+2,vol_k,ex14_2_3.bch,8.3025e-09,14426,10.3959,NA,NA,1,0
+1,vol_k,ex14_2_3.bch,4.22213e-09,15510,11.0409,NA,NA,1,0
+3,vol_k,ex14_2_3.bch,6.55947e-09,16476,11.1892,NA,NA,1,0
+6,vol_k,ex14_2_3.bch,5.87408e-09,6586,4.91368,NA,NA,1,0
+4,vol_k,ex14_2_3.bch,1.29209e-09,18612,12.4133,NA,NA,1,0
+9,vol_k,ex14_2_3.bch,1.43751e-09,10100,6.36502,NA,NA,1,0
+8,vol_k,ex14_2_3.bch,1.00067e-09,10092,7.02392,NA,NA,1,0

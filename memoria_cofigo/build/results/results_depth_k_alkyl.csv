@@ -1,0 +1,11 @@
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers
+4,depth_k,alkyl.bch,-1.7644,124,0.142135,NA,NA,1,0
+1,depth_k,alkyl.bch,-1.7645,128,0.160999,NA,NA,1,0
+0,depth_k,alkyl.bch,-1.76385,144,0.166844,NA,NA,1,0
+2,depth_k,alkyl.bch,-1.76418,140,0.167699,NA,NA,1,0
+3,depth_k,alkyl.bch,-1.76324,172,0.189295,NA,NA,1,0
+5,depth_k,alkyl.bch,-1.76448,166,0.194278,NA,NA,1,0
+6,depth_k,alkyl.bch,-1.76494,152,0.17092,NA,NA,1,0
+8,depth_k,alkyl.bch,-1.7639,132,0.15566,NA,NA,1,0
+7,depth_k,alkyl.bch,-1.76477,162,0.187263,NA,NA,1,0
+9,depth_k,alkyl.bch,-1.76351,166,0.193918,NA,NA,1,0
