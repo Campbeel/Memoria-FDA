@@ -17,6 +17,9 @@
 #include <memory>
 
 #include <sstream>
+#include <random>
+#include <cstring>
+#include "temp_buffer.h"
 
 using namespace std;
 using namespace ibex;
@@ -40,6 +43,10 @@ struct FdConfig : public DefaultOptimizerConfig {
 };
 
 int main(int argc, char** argv) {
+	auto exe_basename = [](const char* path) -> std::string {
+		const char* slash = strrchr(path, '/');
+		return slash ? std::string(slash+1) : std::string(path);
+	};
 
 #ifdef __IBEX_NO_LP_SOLVER__
 	ibex_error("ibexopt requires a LP Solver (use -DLP_LIB with cmake)");
@@ -125,6 +132,7 @@ int main(int argc, char** argv) {
 	try {
 
 		System *sys;
+		string exe_name = exe_basename(argv[0]);
 
 		string extension = filename.Get().substr(filename.Get().find_last_of('.')+1);
 		if (extension == "nl") {
@@ -143,6 +151,34 @@ int main(int argc, char** argv) {
 
 		if (!sys->goal) {
 			ibex_error(" input file has not goal (it is not an optimization problem).");
+		}
+
+		auto infer_mode = [&](const std::string& exe)->std::string {
+			if (exe.find("depth_k_rand")!=string::npos) return "depth_k_rand";
+			if (exe.find("depth_k")!=string::npos)      return "depth_k";
+			if (exe.find("vol_k_rand")!=string::npos)   return "vol_k_rand";
+			if (exe.find("vol_k")!=string::npos)        return "vol_k";
+			return "";
+		};
+
+		std::string inferred = infer_mode(exe_name);
+		std::string fd_choice = fd_mode ? fd_mode.Get() : inferred;
+
+		bool use_fd_variant = (fd_choice=="depth_k" || fd_choice=="depth_k_rand" ||
+		                       fd_choice=="vol_k"   || fd_choice=="vol_k_rand");
+
+		bool want_fd_logging = use_fd_variant;
+		if (want_fd_logging) {
+			cout << "  [fd-debug] sys.box empty? " << (sys->box.is_empty() ? "yes" : "no")
+			     << " unbounded? " << (sys->box.is_unbounded() ? "yes" : "no")
+			     << " dim=" << sys->nb_var << "\n";
+			if (!sys->box.is_empty() && !sys->box.is_unbounded()) {
+				try {
+					cout << "  [fd-debug] root volume: " << sys->box.volume() << "\n";
+				} catch (...) {
+					cout << "  [fd-debug] root volume: (error computing)\n";
+				}
+			}
 		}
 
 		if (!quiet) {
@@ -312,28 +348,52 @@ int main(int argc, char** argv) {
 		Optimizer* opt_ptr = NULL;
 		std::unique_ptr<OptimLargestFirst> fd_bisector;
 		std::unique_ptr<Optimizer> opt_owner;
+		std::unique_ptr<TempBuffer> temp_buffer;
 
-		if (fd_mode) {
-			string mode = fd_mode.Get();
+		if (use_fd_variant) {
+			string mode = fd_choice;
 			if (mode=="depth_k" || mode=="depth_k_rand" || mode=="vol_k" || mode=="vol_k_rand") {
 				// Para estas variantes, usamos un bisector OptimLargestFirst sin dividir el objetivo.
 				ExtendedSystem& ext_sys = config.get_ext_sys();
 				const Vector& ex = config.get_eps_x();
 				double eps_scalar = ex.size()>=1 ? ex[0] : OptimizerConfig::default_eps_x;
 				fd_bisector.reset(new OptimLargestFirst(ext_sys.goal_var(), /*choose_obj=*/false, eps_scalar));
+				CellBufferOptim* buffer_ptr = &config.get_cell_buffer();
+				double V0_ref = 1.0;
+				if (!sys->box.is_empty() && !sys->box.is_unbounded()) {
+					try { V0_ref = sys->box.volume(); } catch (...) { V0_ref = 1.0; }
+				}
+				bool is_rand = (mode.find("_rand")!=string::npos);
+				bool use_depth = (mode.find("depth")!=string::npos);
+				bool use_vol   = (mode.find("vol")!=string::npos);
+				TempBuffer::Params params;
+				params.k = 10.0;
+				params.bias = 1e-3;
+				params.T0 = 100.0;
+				params.depth_cut = use_depth ? 5 : 0;
+				params.vol_ratio_cut = use_vol ? 0.05 : 0.0;
+				params.V0_ref = V0_ref;
+				params.depth_penalty = 1e6;
+				params.vol_penalty = 1e6;
+				params.rand_k = is_rand;
+				params.rand_seed = random_seed ? static_cast<uint64_t>(random_seed.Get()) : static_cast<uint64_t>(DefaultOptimizerConfig::default_random_seed);
+
+				temp_buffer.reset(new TempBuffer(ext_sys, ext_sys.goal_var(), params));
+				buffer_ptr = temp_buffer.get();
+
 				opt_owner.reset(new Optimizer(
 					config.nb_var(),
 					config.get_ctc(),
 					*fd_bisector,
 					config.get_loup_finder(),
-					config.get_cell_buffer(),
+					*buffer_ptr,
 					config.goal_var(),
 					OptimizerConfig::default_eps_x,
 					config.get_rel_eps_f(),
 					config.get_abs_eps_f(),
 					config.with_statistics()));
 				opt_ptr = opt_owner.get();
-				if (!quiet) cout << "  fd-mode:\t\t" << mode << " (bisector OptimLargestFirst)\n";
+				if (!quiet) cout << "  fd-mode:\t\t" << mode << " (bisector OptimLargestFirst + TempBuffer)\n";
 			} else {
 				if (!quiet) cerr << "  [warning] fd-mode '" << mode << "' no soportado; usando modo base.\n";
 			}

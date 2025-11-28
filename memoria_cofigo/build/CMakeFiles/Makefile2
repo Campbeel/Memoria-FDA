@@ -65,6 +65,10 @@ CMAKE_BINARY_DIR = /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build
 # The main recursive "all" target.
 all: CMakeFiles/ibex_opt_base.dir/all
 all: CMakeFiles/ibex_opt_full.dir/all
+all: CMakeFiles/ibex_opt_full_depth_k.dir/all
+all: CMakeFiles/ibex_opt_full_depth_k_rand.dir/all
+all: CMakeFiles/ibex_opt_full_vol_k.dir/all
+all: CMakeFiles/ibex_opt_full_vol_k_rand.dir/all
 all: CMakeFiles/ibex_menu.dir/all
 .PHONY : all
 
@@ -75,6 +79,10 @@ preinstall:
 # The main recursive "clean" target.
 clean: CMakeFiles/ibex_opt_base.dir/clean
 clean: CMakeFiles/ibex_opt_full.dir/clean
+clean: CMakeFiles/ibex_opt_full_depth_k.dir/clean
+clean: CMakeFiles/ibex_opt_full_depth_k_rand.dir/clean
+clean: CMakeFiles/ibex_opt_full_vol_k.dir/clean
+clean: CMakeFiles/ibex_opt_full_vol_k_rand.dir/clean
 clean: CMakeFiles/ibex_menu.dir/clean
 .PHONY : clean
 
@@ -111,12 +119,12 @@ CMakeFiles/ibex_opt_base.dir/clean:
 CMakeFiles/ibex_opt_full.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full.dir/build.make CMakeFiles/ibex_opt_full.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full.dir/build.make CMakeFiles/ibex_opt_full.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles --progress-num=5,6 "Built target ibex_opt_full"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles --progress-num=5,6,7 "Built target ibex_opt_full"
 .PHONY : CMakeFiles/ibex_opt_full.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/ibex_opt_full.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles 2
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles 3
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/ibex_opt_full.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles 0
 .PHONY : CMakeFiles/ibex_opt_full.dir/rule
@@ -129,6 +137,110 @@ ibex_opt_full: CMakeFiles/ibex_opt_full.dir/rule
 CMakeFiles/ibex_opt_full.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full.dir/build.make CMakeFiles/ibex_opt_full.dir/clean
 .PHONY : CMakeFiles/ibex_opt_full.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/ibex_opt_full_depth_k.dir
+
+# All Build rule for target.
+CMakeFiles/ibex_opt_full_depth_k.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k.dir/build.make CMakeFiles/ibex_opt_full_depth_k.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k.dir/build.make CMakeFiles/ibex_opt_full_depth_k.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles --progress-num=8,9,10 "Built target ibex_opt_full_depth_k"
+.PHONY : CMakeFiles/ibex_opt_full_depth_k.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/ibex_opt_full_depth_k.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles 3
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/ibex_opt_full_depth_k.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles 0
+.PHONY : CMakeFiles/ibex_opt_full_depth_k.dir/rule
+
+# Convenience name for target.
+ibex_opt_full_depth_k: CMakeFiles/ibex_opt_full_depth_k.dir/rule
+.PHONY : ibex_opt_full_depth_k
+
+# clean rule for target.
+CMakeFiles/ibex_opt_full_depth_k.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k.dir/build.make CMakeFiles/ibex_opt_full_depth_k.dir/clean
+.PHONY : CMakeFiles/ibex_opt_full_depth_k.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/ibex_opt_full_depth_k_rand.dir
+
+# All Build rule for target.
+CMakeFiles/ibex_opt_full_depth_k_rand.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k_rand.dir/build.make CMakeFiles/ibex_opt_full_depth_k_rand.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k_rand.dir/build.make CMakeFiles/ibex_opt_full_depth_k_rand.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles --progress-num=11,12,13 "Built target ibex_opt_full_depth_k_rand"
+.PHONY : CMakeFiles/ibex_opt_full_depth_k_rand.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/ibex_opt_full_depth_k_rand.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles 3
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/ibex_opt_full_depth_k_rand.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles 0
+.PHONY : CMakeFiles/ibex_opt_full_depth_k_rand.dir/rule
+
+# Convenience name for target.
+ibex_opt_full_depth_k_rand: CMakeFiles/ibex_opt_full_depth_k_rand.dir/rule
+.PHONY : ibex_opt_full_depth_k_rand
+
+# clean rule for target.
+CMakeFiles/ibex_opt_full_depth_k_rand.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k_rand.dir/build.make CMakeFiles/ibex_opt_full_depth_k_rand.dir/clean
+.PHONY : CMakeFiles/ibex_opt_full_depth_k_rand.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/ibex_opt_full_vol_k.dir
+
+# All Build rule for target.
+CMakeFiles/ibex_opt_full_vol_k.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k.dir/build.make CMakeFiles/ibex_opt_full_vol_k.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k.dir/build.make CMakeFiles/ibex_opt_full_vol_k.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles --progress-num=14,15,16 "Built target ibex_opt_full_vol_k"
+.PHONY : CMakeFiles/ibex_opt_full_vol_k.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/ibex_opt_full_vol_k.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles 3
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/ibex_opt_full_vol_k.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles 0
+.PHONY : CMakeFiles/ibex_opt_full_vol_k.dir/rule
+
+# Convenience name for target.
+ibex_opt_full_vol_k: CMakeFiles/ibex_opt_full_vol_k.dir/rule
+.PHONY : ibex_opt_full_vol_k
+
+# clean rule for target.
+CMakeFiles/ibex_opt_full_vol_k.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k.dir/build.make CMakeFiles/ibex_opt_full_vol_k.dir/clean
+.PHONY : CMakeFiles/ibex_opt_full_vol_k.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/ibex_opt_full_vol_k_rand.dir
+
+# All Build rule for target.
+CMakeFiles/ibex_opt_full_vol_k_rand.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k_rand.dir/build.make CMakeFiles/ibex_opt_full_vol_k_rand.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k_rand.dir/build.make CMakeFiles/ibex_opt_full_vol_k_rand.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles --progress-num=17,18,19 "Built target ibex_opt_full_vol_k_rand"
+.PHONY : CMakeFiles/ibex_opt_full_vol_k_rand.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/ibex_opt_full_vol_k_rand.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles 3
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/ibex_opt_full_vol_k_rand.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/build/CMakeFiles 0
+.PHONY : CMakeFiles/ibex_opt_full_vol_k_rand.dir/rule
+
+# Convenience name for target.
+ibex_opt_full_vol_k_rand: CMakeFiles/ibex_opt_full_vol_k_rand.dir/rule
+.PHONY : ibex_opt_full_vol_k_rand
+
+# clean rule for target.
+CMakeFiles/ibex_opt_full_vol_k_rand.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k_rand.dir/build.make CMakeFiles/ibex_opt_full_vol_k_rand.dir/clean
+.PHONY : CMakeFiles/ibex_opt_full_vol_k_rand.dir/clean
 
 #=============================================================================
 # Target rules for target CMakeFiles/ibex_menu.dir

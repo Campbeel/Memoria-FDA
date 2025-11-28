@@ -67,8 +67,26 @@ add_executable(ibex_opt_base ibex_opt_base.cpp)
 target_link_libraries(ibex_opt_base ${MEMORIA_LIBS} Clp CoinUtils)
 
 # Ejecutable "ibexopt" original (clonado de src/bin/ibexopt.cpp)
-add_executable(ibex_opt_full ibex_opt_full.cpp)
+add_executable(ibex_opt_full ibex_opt_full.cpp temp_buffer.cpp)
 target_link_libraries(ibex_opt_full ${MEMORIA_LIBS} Clp CoinUtils)
+
+# Copias dedicadas por variante (base del optimizer estándar, listas para modificar).
+add_executable(ibex_opt_full_depth_k ibex_opt_full.cpp temp_buffer.cpp)
+target_link_libraries(ibex_opt_full_depth_k ${MEMORIA_LIBS} Clp CoinUtils)
+
+add_executable(ibex_opt_full_depth_k_rand ibex_opt_full.cpp temp_buffer.cpp)
+target_link_libraries(ibex_opt_full_depth_k_rand ${MEMORIA_LIBS} Clp CoinUtils)
+
+add_executable(ibex_opt_full_vol_k ibex_opt_full.cpp temp_buffer.cpp)
+target_link_libraries(ibex_opt_full_vol_k ${MEMORIA_LIBS} Clp CoinUtils)
+
+add_executable(ibex_opt_full_vol_k_rand ibex_opt_full.cpp temp_buffer.cpp)
+target_link_libraries(ibex_opt_full_vol_k_rand ${MEMORIA_LIBS} Clp CoinUtils)
+
+target_include_directories(ibex_opt_full_depth_k PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ibex_local)
+target_include_directories(ibex_opt_full_depth_k_rand PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ibex_local)
+target_include_directories(ibex_opt_full_vol_k PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ibex_local)
+target_include_directories(ibex_opt_full_vol_k_rand PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ibex_local)
 
 add_executable(ibex_menu run_menu.cpp)
 target_link_libraries(ibex_menu pthread)

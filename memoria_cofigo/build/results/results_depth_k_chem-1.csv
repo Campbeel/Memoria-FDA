@@ -1,0 +1,4 @@
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal
+0,depth_k,chem-1.bch,-47.7063,6916092,5628.57,NA,NA,1
+2,depth_k,chem-1.bch,-47.7063,6916092,5644,NA,NA,1
+1,depth_k,chem-1.bch,-47.7063,6916092,5657.11,NA,NA,1

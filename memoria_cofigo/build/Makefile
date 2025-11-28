@@ -143,6 +143,58 @@ ibex_opt_full/fast:
 .PHONY : ibex_opt_full/fast
 
 #=============================================================================
+# Target rules for targets named ibex_opt_full_depth_k
+
+# Build rule for target.
+ibex_opt_full_depth_k: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ibex_opt_full_depth_k
+.PHONY : ibex_opt_full_depth_k
+
+# fast build rule for target.
+ibex_opt_full_depth_k/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k.dir/build.make CMakeFiles/ibex_opt_full_depth_k.dir/build
+.PHONY : ibex_opt_full_depth_k/fast
+
+#=============================================================================
+# Target rules for targets named ibex_opt_full_depth_k_rand
+
+# Build rule for target.
+ibex_opt_full_depth_k_rand: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ibex_opt_full_depth_k_rand
+.PHONY : ibex_opt_full_depth_k_rand
+
+# fast build rule for target.
+ibex_opt_full_depth_k_rand/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k_rand.dir/build.make CMakeFiles/ibex_opt_full_depth_k_rand.dir/build
+.PHONY : ibex_opt_full_depth_k_rand/fast
+
+#=============================================================================
+# Target rules for targets named ibex_opt_full_vol_k
+
+# Build rule for target.
+ibex_opt_full_vol_k: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ibex_opt_full_vol_k
+.PHONY : ibex_opt_full_vol_k
+
+# fast build rule for target.
+ibex_opt_full_vol_k/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k.dir/build.make CMakeFiles/ibex_opt_full_vol_k.dir/build
+.PHONY : ibex_opt_full_vol_k/fast
+
+#=============================================================================
+# Target rules for targets named ibex_opt_full_vol_k_rand
+
+# Build rule for target.
+ibex_opt_full_vol_k_rand: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 ibex_opt_full_vol_k_rand
+.PHONY : ibex_opt_full_vol_k_rand
+
+# fast build rule for target.
+ibex_opt_full_vol_k_rand/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k_rand.dir/build.make CMakeFiles/ibex_opt_full_vol_k_rand.dir/build
+.PHONY : ibex_opt_full_vol_k_rand/fast
+
+#=============================================================================
 # Target rules for targets named ibex_menu
 
 # Build rule for target.
@@ -185,6 +237,10 @@ ibex_opt_full.o: ibex_opt_full.cpp.o
 # target to build an object file
 ibex_opt_full.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full.dir/build.make CMakeFiles/ibex_opt_full.dir/ibex_opt_full.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k.dir/build.make CMakeFiles/ibex_opt_full_depth_k.dir/ibex_opt_full.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k_rand.dir/build.make CMakeFiles/ibex_opt_full_depth_k_rand.dir/ibex_opt_full.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k.dir/build.make CMakeFiles/ibex_opt_full_vol_k.dir/ibex_opt_full.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k_rand.dir/build.make CMakeFiles/ibex_opt_full_vol_k_rand.dir/ibex_opt_full.cpp.o
 .PHONY : ibex_opt_full.cpp.o
 
 ibex_opt_full.i: ibex_opt_full.cpp.i
@@ -193,6 +249,10 @@ ibex_opt_full.i: ibex_opt_full.cpp.i
 # target to preprocess a source file
 ibex_opt_full.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full.dir/build.make CMakeFiles/ibex_opt_full.dir/ibex_opt_full.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k.dir/build.make CMakeFiles/ibex_opt_full_depth_k.dir/ibex_opt_full.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k_rand.dir/build.make CMakeFiles/ibex_opt_full_depth_k_rand.dir/ibex_opt_full.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k.dir/build.make CMakeFiles/ibex_opt_full_vol_k.dir/ibex_opt_full.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k_rand.dir/build.make CMakeFiles/ibex_opt_full_vol_k_rand.dir/ibex_opt_full.cpp.i
 .PHONY : ibex_opt_full.cpp.i
 
 ibex_opt_full.s: ibex_opt_full.cpp.s
@@ -201,6 +261,10 @@ ibex_opt_full.s: ibex_opt_full.cpp.s
 # target to generate assembly for a file
 ibex_opt_full.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full.dir/build.make CMakeFiles/ibex_opt_full.dir/ibex_opt_full.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k.dir/build.make CMakeFiles/ibex_opt_full_depth_k.dir/ibex_opt_full.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k_rand.dir/build.make CMakeFiles/ibex_opt_full_depth_k_rand.dir/ibex_opt_full.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k.dir/build.make CMakeFiles/ibex_opt_full_vol_k.dir/ibex_opt_full.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k_rand.dir/build.make CMakeFiles/ibex_opt_full_vol_k_rand.dir/ibex_opt_full.cpp.s
 .PHONY : ibex_opt_full.cpp.s
 
 run_menu.o: run_menu.cpp.o
@@ -227,6 +291,42 @@ run_menu.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_menu.dir/build.make CMakeFiles/ibex_menu.dir/run_menu.cpp.s
 .PHONY : run_menu.cpp.s
 
+temp_buffer.o: temp_buffer.cpp.o
+.PHONY : temp_buffer.o
+
+# target to build an object file
+temp_buffer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full.dir/build.make CMakeFiles/ibex_opt_full.dir/temp_buffer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k.dir/build.make CMakeFiles/ibex_opt_full_depth_k.dir/temp_buffer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k_rand.dir/build.make CMakeFiles/ibex_opt_full_depth_k_rand.dir/temp_buffer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k.dir/build.make CMakeFiles/ibex_opt_full_vol_k.dir/temp_buffer.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k_rand.dir/build.make CMakeFiles/ibex_opt_full_vol_k_rand.dir/temp_buffer.cpp.o
+.PHONY : temp_buffer.cpp.o
+
+temp_buffer.i: temp_buffer.cpp.i
+.PHONY : temp_buffer.i
+
+# target to preprocess a source file
+temp_buffer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full.dir/build.make CMakeFiles/ibex_opt_full.dir/temp_buffer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k.dir/build.make CMakeFiles/ibex_opt_full_depth_k.dir/temp_buffer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k_rand.dir/build.make CMakeFiles/ibex_opt_full_depth_k_rand.dir/temp_buffer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k.dir/build.make CMakeFiles/ibex_opt_full_vol_k.dir/temp_buffer.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k_rand.dir/build.make CMakeFiles/ibex_opt_full_vol_k_rand.dir/temp_buffer.cpp.i
+.PHONY : temp_buffer.cpp.i
+
+temp_buffer.s: temp_buffer.cpp.s
+.PHONY : temp_buffer.s
+
+# target to generate assembly for a file
+temp_buffer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full.dir/build.make CMakeFiles/ibex_opt_full.dir/temp_buffer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k.dir/build.make CMakeFiles/ibex_opt_full_depth_k.dir/temp_buffer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_depth_k_rand.dir/build.make CMakeFiles/ibex_opt_full_depth_k_rand.dir/temp_buffer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k.dir/build.make CMakeFiles/ibex_opt_full_vol_k.dir/temp_buffer.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/ibex_opt_full_vol_k_rand.dir/build.make CMakeFiles/ibex_opt_full_vol_k_rand.dir/temp_buffer.cpp.s
+.PHONY : temp_buffer.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -238,6 +338,10 @@ help:
 	@echo "... ibex_menu"
 	@echo "... ibex_opt_base"
 	@echo "... ibex_opt_full"
+	@echo "... ibex_opt_full_depth_k"
+	@echo "... ibex_opt_full_depth_k_rand"
+	@echo "... ibex_opt_full_vol_k"
+	@echo "... ibex_opt_full_vol_k_rand"
 	@echo "... ibex_opt_base.o"
 	@echo "... ibex_opt_base.i"
 	@echo "... ibex_opt_base.s"
@@ -247,6 +351,9 @@ help:
 	@echo "... run_menu.o"
 	@echo "... run_menu.i"
 	@echo "... run_menu.s"
+	@echo "... temp_buffer.o"
+	@echo "... temp_buffer.i"
+	@echo "... temp_buffer.s"
 .PHONY : help
 
 

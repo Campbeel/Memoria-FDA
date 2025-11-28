@@ -42,5 +42,9 @@ set(CMAKE_MAKEFILE_PRODUCTS
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/ibex_opt_base.dir/DependInfo.cmake"
   "CMakeFiles/ibex_opt_full.dir/DependInfo.cmake"
+  "CMakeFiles/ibex_opt_full_depth_k.dir/DependInfo.cmake"
+  "CMakeFiles/ibex_opt_full_depth_k_rand.dir/DependInfo.cmake"
+  "CMakeFiles/ibex_opt_full_vol_k.dir/DependInfo.cmake"
+  "CMakeFiles/ibex_opt_full_vol_k_rand.dir/DependInfo.cmake"
   "CMakeFiles/ibex_menu.dir/DependInfo.cmake"
   )
