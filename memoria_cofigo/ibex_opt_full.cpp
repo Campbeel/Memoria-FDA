@@ -48,6 +48,10 @@ int main(int argc, char** argv) {
 		const char* slash = strrchr(path, '/');
 		return slash ? std::string(slash+1) : std::string(path);
 	};
+	auto exe_basename = [](const char* path) -> std::string {
+		const char* slash = strrchr(path, '/');
+		return slash ? std::string(slash+1) : std::string(path);
+	};
 
 #ifdef __IBEX_NO_LP_SOLVER__
 	ibex_error("ibexopt requires a LP Solver (use -DLP_LIB with cmake)");
@@ -134,6 +138,7 @@ int main(int argc, char** argv) {
 
 		System *sys;
 		string exe_name = exe_basename(argv[0]);
+		string exe_name = exe_basename(argv[0]);
 
 		string extension = filename.Get().substr(filename.Get().find_last_of('.')+1);
 		if (extension == "nl") {
@@ -152,6 +157,34 @@ int main(int argc, char** argv) {
 
 		if (!sys->goal) {
 			ibex_error(" input file has not goal (it is not an optimization problem).");
+		}
+
+		auto infer_mode = [&](const std::string& exe)->std::string {
+			if (exe.find("depth_k_rand")!=string::npos) return "depth_k_rand";
+			if (exe.find("depth_k")!=string::npos)      return "depth_k";
+			if (exe.find("vol_k_rand")!=string::npos)   return "vol_k_rand";
+			if (exe.find("vol_k")!=string::npos)        return "vol_k";
+			return "";
+		};
+
+		std::string inferred = infer_mode(exe_name);
+		std::string fd_choice = fd_mode ? fd_mode.Get() : inferred;
+
+		bool use_fd_variant = (fd_choice=="depth_k" || fd_choice=="depth_k_rand" ||
+		                       fd_choice=="vol_k"   || fd_choice=="vol_k_rand");
+
+		bool want_fd_logging = use_fd_variant;
+		if (want_fd_logging) {
+			cout << "  [fd-debug] sys.box empty? " << (sys->box.is_empty() ? "yes" : "no")
+			     << " unbounded? " << (sys->box.is_unbounded() ? "yes" : "no")
+			     << " dim=" << sys->nb_var << "\n";
+			if (!sys->box.is_empty() && !sys->box.is_unbounded()) {
+				try {
+					cout << "  [fd-debug] root volume: " << sys->box.volume() << "\n";
+				} catch (...) {
+					cout << "  [fd-debug] root volume: (error computing)\n";
+				}
+			}
 		}
 
 		auto infer_mode = [&](const std::string& exe)->std::string {
@@ -354,6 +387,8 @@ int main(int argc, char** argv) {
 
 		if (use_fd_variant) {
 			string mode = fd_choice;
+		if (use_fd_variant) {
+			string mode = fd_choice;
 			if (mode=="depth_k" || mode=="depth_k_rand" || mode=="vol_k" || mode=="vol_k_rand") {
 				// Para estas variantes, usamos un bisector OptimLargestFirst sin dividir el objetivo.
 				ExtendedSystem& ext_sys = config.get_ext_sys();
@@ -472,12 +507,14 @@ int main(int argc, char** argv) {
 					*fd_bisector,
 					config.get_loup_finder(),
 					*buffer_ptr,
+					*buffer_ptr,
 					config.goal_var(),
 					OptimizerConfig::default_eps_x,
 					config.get_rel_eps_f(),
 					config.get_abs_eps_f(),
 					config.with_statistics()));
 				opt_ptr = opt_owner.get();
+				if (!quiet) cout << "  fd-mode:\t\t" << mode << " (bisector OptimLargestFirst + TempBuffer)\n";
 				if (!quiet) cout << "  fd-mode:\t\t" << mode << " (bisector OptimLargestFirst + TempBuffer)\n";
 			} else {
 				if (!quiet) cerr << "  [warning] fd-mode '" << mode << "' no soportado; usando modo base.\n";

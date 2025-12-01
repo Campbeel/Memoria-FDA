@@ -600,9 +600,6 @@ CMakeFiles/ibex_opt_full_depth_k_rand.dir/ibex_opt_full.cpp.o: \
  /usr/include/c++/13/bits/random.tcc /usr/include/c++/13/numeric \
  /usr/include/c++/13/bits/stl_numeric.h \
  /usr/include/c++/13/pstl/glue_numeric_defs.h \
-<<<<<<< HEAD
- /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/temp_buffer.h
-=======
  /home/benjamin-mu-oz/ibex-lib/memoria_cofigo/temp_buffer.h \
  /usr/include/c++/13/filesystem /usr/include/c++/13/bits/fs_fwd.h \
  /usr/include/c++/13/bits/chrono.h /usr/include/c++/13/ratio \
@@ -615,4 +612,3 @@ CMakeFiles/ibex_opt_full_depth_k_rand.dir/ibex_opt_full.cpp.o: \
  /usr/include/c++/13/bits/locale_conv.h /usr/include/c++/13/iomanip \
  /usr/include/c++/13/bits/quoted_string.h /usr/include/c++/13/codecvt \
  /usr/include/c++/13/bits/fs_dir.h /usr/include/c++/13/bits/fs_ops.h
->>>>>>> 112bec2 (cambios en casi todfo, stop ya  revisado y paralelismo funcional , lo que falta es comprobacion de triger y seria sacar resultados)
