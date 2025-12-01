@@ -1,0 +1,11 @@
+run,variant,problem,triggers_total,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
+3,vol_k_rand,alkylbis.bch,133,0,133,133,0
+4,vol_k_rand,alkylbis.bch,137,0,137,138,1
+2,vol_k_rand,alkylbis.bch,145,0,145,145,0
+5,vol_k_rand,alkylbis.bch,138,0,138,138,0
+0,vol_k_rand,alkylbis.bch,156,0,156,156,0
+1,vol_k_rand,alkylbis.bch,156,0,156,156,0
+9,vol_k_rand,alkylbis.bch,98,0,98,98,0
+7,vol_k_rand,alkylbis.bch,125,0,125,125,0
+8,vol_k_rand,alkylbis.bch,123,0,123,125,2
+6,vol_k_rand,alkylbis.bch,134,0,134,134,0

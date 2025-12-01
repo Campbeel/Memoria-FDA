@@ -1,93 +1,17 @@
 // temp_buffer.cpp
+// Cola con buckets por lb. Tie-break configurable (profundidad o volumen), sin alterar la cota inferior.
 
 #include "temp_buffer.h"
+#include <algorithm>
 #include <cmath>
-#include <cstdint>
+#include <cstdlib>
 
 using namespace ibex;
-
-namespace {
-// Pequeño generador determinístico (xorshift-like) para evitar RNG global.
-inline double deterministic_noise(uint64_t seed, uint64_t depth) {
-    uint64_t z = (depth + 1) ^ (seed + 0x9e3779b97f4a7c15ULL);
-    z ^= (z >> 30); z *= 0xbf58476d1ce4e5b9ULL;
-    z ^= (z >> 27); z *= 0x94d049bb133111ebULL;
-    z ^= (z >> 31);
-    const double norm = static_cast<double>((uint64_t(1) << 53) - 1);
-    return 0.5 + (z & ((uint64_t(1) << 53) - 1)) / norm; // [0.5 , 1.5)
-}
-
-inline double jitter(double base, double rel, uint64_t seed, uint64_t depth) {
-    if (rel <= 0.0) return base;
-    double n = deterministic_noise(seed, depth) - 1.0; // [-0.5,0.5]
-    return base * (1.0 + rel * n);
-}
-}
-
-TempBuffer::TempCost::TempCost(const ExtendedSystem& sys, int goal_var, const Params& p)
-: CellCostFunc(sys, false), goal_var(goal_var), params(p) {}
-
-double TempBuffer::TempCost::cost(const Cell& c) const {
-    double lb = c.box[goal_var].lb();
-    double ub = c.box[goal_var].ub();
-    if (!std::isfinite(lb)) lb = ub;
-    if (!std::isfinite(ub)) ub = lb;
-    // Usamos lb como coste principal; ub sólo si lb no está definido.
-    double bound = std::isfinite(lb) ? lb : ub;
-
-    double k_eff = params.k;
-    if (params.rand_k) {
-        k_eff *= deterministic_noise(params.rand_seed, c.depth);
-    }
-    double T = c.temperature;
-    if (!(std::isfinite(T) && T>0.0)) {
-        T = params.T0 * std::pow(k_eff/2.0, static_cast<double>(c.depth));
-    }
-
-    // Coste híbrido: lb principal + tie-break térmico (menor score para T alta).
-    double temp_term = params.bias * (1.0 / (1.0 + T));
-    double score = bound + temp_term;
-
-    int depth_limit = params.depth_cut;
-    if (depth_limit > 0 && params.depth_cut_jitter > 0.0) {
-        double jd = jitter(static_cast<double>(depth_limit), params.depth_cut_jitter, params.rand_seed ^ 0x44444444ULL, c.depth);
-        depth_limit = std::max(1, static_cast<int>(std::round(jd)));
-    }
-
-    bool depth_trigger = false;
-    if (depth_limit > 0 && static_cast<int>(c.depth) >= depth_limit && c.depth>0) {
-        depth_trigger = true;
-    }
-
-    if (params.vol_ratio_cut > 0.0 && !c.box.is_unbounded()) {
-        double V = c.box.volume();
-        if (std::isfinite(V) && params.V0_ref > 0.0) {
-            double vr = params.vol_ratio_cut;
-            if (params.vol_cut_jitter > 0.0) {
-                vr = jitter(vr, params.vol_cut_jitter, params.rand_seed ^ 0x33333333ULL, c.depth);
-            }
-            double thresh = vr * params.V0_ref;
-            if (V <= thresh && c.depth>0) {
-                // solo contar, sin penalizar
-            }
-        }
-    }
-
-    if (params.tie_noise > 0.0) {
-        double tie = params.tie_noise * deterministic_noise(params.rand_seed ^ 0x22222222ULL, c.depth);
-        score += tie;
-    }
-
-    return score;
-}
 
 TempBuffer::TempBuffer(const ExtendedSystem& sys,
                        int goal_var,
                        const Params& params)
-: cost_obj_(sys, goal_var, params),
-  heap_(cost_obj_),
-  last_min_(POS_INFINITY) {
-    // Configura parámetros de temperatura en la celda para herencia T_hijo = (T_padre/2)*k
+: goal_var_(goal_var), params_(params) {
     Cell::set_temp_params(params.k, params.rand_k, params.rand_seed, params.T0);
     debug_triggers_ = std::getenv("FD_TRIGGER_DEBUG") != nullptr;
 }
@@ -97,64 +21,154 @@ TempBuffer::~TempBuffer() {
 }
 
 void TempBuffer::flush() {
-    heap_.flush();
-    last_min_ = POS_INFINITY;
+    buckets_.clear();
+    size_ = 0;
+    trigger_count_ = depth_trigger_count_ = vol_trigger_count_ = 0;
+    vol_eval_count_ = vol_nonfinite_count_ = 0;
 }
-unsigned int TempBuffer::size() const      { return static_cast<unsigned int>(heap_.size()); }
-bool TempBuffer::empty() const             { return heap_.empty(); }
+
+unsigned int TempBuffer::size() const { return static_cast<unsigned int>(size_); }
+bool TempBuffer::empty() const { return size_==0; }
 double TempBuffer::minimum() const {
-    return heap_.empty() ? POS_INFINITY : heap_.minimum();
+    if (buckets_.empty()) return POS_INFINITY;
+    return buckets_.begin()->first;
 }
-void TempBuffer::contract(double new_loup) { heap_.contract(new_loup); }
+void TempBuffer::contract(double loup) {
+    auto it = buckets_.upper_bound(loup);
+    while (it != buckets_.end()) {
+        size_ -= it->second.size();
+        it = buckets_.erase(it);
+    }
+}
+
+double TempBuffer::log_volume(const IntervalVector& box) const {
+    double acc = 0.0;
+    for (int i=0;i<box.size();++i) {
+        double w = box[i].diam();
+        if (!std::isfinite(w)) return POS_INFINITY;
+        w = std::max(1e-300, std::min(1e300, w));
+        acc += std::log10(w);
+    }
+    return acc;
+}
+
+double TempBuffer::temp_value(const Cell& c) const {
+    double T = c.temperature;
+    if (!(std::isfinite(T) && T>0.0)) {
+        T = params_.T0 * std::pow(params_.k/2.0, static_cast<double>(c.depth));
+    }
+    return T;
+}
+
+size_t TempBuffer::choose_index(const std::vector<Cell*>& vec) const {
+    if (vec.empty()) return 0;
+    size_t best = 0;
+    if (params_.tie_break_mode==1) {
+        int best_d = vec[0]->depth;
+        double best_t = temp_value(*vec[0]);
+        for (size_t i=1;i<vec.size();++i) {
+            int d = vec[i]->depth;
+            double t = temp_value(*vec[i]);
+            if (d < best_d || (d==best_d && t<best_t)) {
+                best = i; best_d = d; best_t = t;
+            }
+        }
+    } else if (params_.tie_break_mode==2) {
+        double best_v = log_volume(vec[0]->box);
+        double best_t = temp_value(*vec[0]);
+        for (size_t i=1;i<vec.size();++i) {
+            double v = log_volume(vec[i]->box);
+            double t = temp_value(*vec[i]);
+            if (v < best_v || (v==best_v && t<best_t)) {
+                best = i; best_v = v; best_t = t;
+            }
+        }
+    }
+    return best;
+}
 
 void TempBuffer::push(Cell* cell) {
     if (!cell) return;
-    // Contar trigger solo en nodos no raíz (hijos) y sin modificar la cola.
-    if (!reinserting_ && cell->depth>0) {
-        int depth_limit = cost_obj_.params.depth_cut;
-        if (depth_limit > 0 && cost_obj_.params.depth_cut_jitter > 0.0) {
-            double jd = jitter(static_cast<double>(depth_limit), cost_obj_.params.depth_cut_jitter, cost_obj_.params.rand_seed ^ 0x44444444ULL, cell->depth);
-            depth_limit = std::max(1, static_cast<int>(std::round(jd)));
+    if (cell->depth>0) {
+        int depth_limit = params_.depth_cut;
+        if (depth_limit > 0 && params_.depth_cut_jitter > 0.0) {
+            double n = ((double)std::rand()/RAND_MAX - 0.5);
+            depth_limit = std::max(1, static_cast<int>(std::round(depth_limit * (1.0 + params_.depth_cut_jitter * n))));
         }
         bool depth_trigger = (depth_limit > 0 && static_cast<int>(cell->depth) >= depth_limit);
         bool vol_trigger = false;
-        if (cost_obj_.params.vol_ratio_cut > 0.0 && !cell->box.is_unbounded()) {
+        if (!cell->box.is_unbounded()) {
+            vol_eval_count_++;
             double V = cell->box.volume();
-            if (std::isfinite(V) && cost_obj_.params.V0_ref > 0.0) {
-                double vr = cost_obj_.params.vol_ratio_cut;
-                if (cost_obj_.params.vol_cut_jitter > 0.0) {
-                    vr = jitter(vr, cost_obj_.params.vol_cut_jitter, cost_obj_.params.rand_seed ^ 0x33333333ULL, cell->depth);
+            double logV = log_volume(cell->box);
+            bool use_log = params_.use_log_volume || !std::isfinite(V) || !std::isfinite(params_.V0_ref);
+            double vr = params_.vol_ratio_cut;
+            if (params_.vol_cut_jitter > 0.0) {
+                double n = ((double)std::rand()/RAND_MAX - 0.5);
+                vr = vr * (1.0 + params_.vol_cut_jitter * n);
+            }
+            if (use_log) {
+                if (std::isfinite(logV) && std::isfinite(params_.log_V0_ref) && vr>0.0) {
+                    double log_thresh = params_.log_V0_ref + std::log10(vr);
+                    vol_trigger = (logV <= log_thresh);
+                } else {
+                    vol_nonfinite_count_++;
                 }
-                double thresh = vr * cost_obj_.params.V0_ref;
+            } else if (std::isfinite(V) && params_.V0_ref > 0.0 && vr>0.0) {
+                double thresh = vr * params_.V0_ref;
                 vol_trigger = (V <= thresh);
+            } else {
+                vol_nonfinite_count_++;
             }
         }
         if (depth_trigger || vol_trigger) {
             trigger_count_++;
+            if (depth_trigger) depth_trigger_count_++;
+            if (vol_trigger)   vol_trigger_count_++;
             if (debug_triggers_ && debug_shown_ < 5) {
                 std::cout << "[fd-debug] trigger depth=" << cell->depth
                           << " depth_cut=" << depth_limit
                           << " vol_trigger=" << vol_trigger
-                          << " V0=" << cost_obj_.params.V0_ref
-                          << " vr=" << cost_obj_.params.vol_ratio_cut << std::endl;
+                          << " V0=" << params_.V0_ref
+                          << " vr=" << params_.vol_ratio_cut << std::endl;
                 debug_shown_++;
             }
         }
     }
-    heap_.push(cell);
+    double lb = cell->box[goal_var_].lb();
+    if (!std::isfinite(lb)) lb = cell->box[goal_var_].ub();
+    if (!std::isfinite(lb)) lb = POS_INFINITY;
+    buckets_[lb].push_back(cell);
+    size_++;
+}
+
+Cell* TempBuffer::pop() {
+    if (buckets_.empty()) return NULL;
+    auto it = buckets_.begin();
+    auto& vec = it->second;
+    if (vec.empty()) {
+        buckets_.erase(it);
+        return pop();
+    }
+    size_t idx = choose_index(vec);
+    Cell* res = vec[idx];
+    vec[idx] = vec.back();
+    vec.pop_back();
+    if (vec.empty()) buckets_.erase(it);
+    size_--;
+    return res;
+}
+
+Cell* TempBuffer::top() const {
+    if (buckets_.empty()) return NULL;
+    auto it = buckets_.begin();
+    const auto& vec = it->second;
+    if (vec.empty()) return NULL;
+    size_t idx = choose_index(vec);
+    return vec[idx];
 }
 
 std::ostream& TempBuffer::print(std::ostream& os) const {
     os << "TempBuffer(size=" << size() << ")";
     return os;
-}
-
-Cell* TempBuffer::pop() {
-    if (heap_.empty()) return NULL;
-    return heap_.pop();
-}
-
-Cell* TempBuffer::top() const {
-    if (heap_.empty()) return NULL;
-    return heap_.top();
 }

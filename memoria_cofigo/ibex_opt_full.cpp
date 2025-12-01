@@ -48,10 +48,6 @@ int main(int argc, char** argv) {
 		const char* slash = strrchr(path, '/');
 		return slash ? std::string(slash+1) : std::string(path);
 	};
-	auto exe_basename = [](const char* path) -> std::string {
-		const char* slash = strrchr(path, '/');
-		return slash ? std::string(slash+1) : std::string(path);
-	};
 
 #ifdef __IBEX_NO_LP_SOLVER__
 	ibex_error("ibexopt requires a LP Solver (use -DLP_LIB with cmake)");
@@ -138,7 +134,6 @@ int main(int argc, char** argv) {
 
 		System *sys;
 		string exe_name = exe_basename(argv[0]);
-		string exe_name = exe_basename(argv[0]);
 
 		string extension = filename.Get().substr(filename.Get().find_last_of('.')+1);
 		if (extension == "nl") {
@@ -157,34 +152,6 @@ int main(int argc, char** argv) {
 
 		if (!sys->goal) {
 			ibex_error(" input file has not goal (it is not an optimization problem).");
-		}
-
-		auto infer_mode = [&](const std::string& exe)->std::string {
-			if (exe.find("depth_k_rand")!=string::npos) return "depth_k_rand";
-			if (exe.find("depth_k")!=string::npos)      return "depth_k";
-			if (exe.find("vol_k_rand")!=string::npos)   return "vol_k_rand";
-			if (exe.find("vol_k")!=string::npos)        return "vol_k";
-			return "";
-		};
-
-		std::string inferred = infer_mode(exe_name);
-		std::string fd_choice = fd_mode ? fd_mode.Get() : inferred;
-
-		bool use_fd_variant = (fd_choice=="depth_k" || fd_choice=="depth_k_rand" ||
-		                       fd_choice=="vol_k"   || fd_choice=="vol_k_rand");
-
-		bool want_fd_logging = use_fd_variant;
-		if (want_fd_logging) {
-			cout << "  [fd-debug] sys.box empty? " << (sys->box.is_empty() ? "yes" : "no")
-			     << " unbounded? " << (sys->box.is_unbounded() ? "yes" : "no")
-			     << " dim=" << sys->nb_var << "\n";
-			if (!sys->box.is_empty() && !sys->box.is_unbounded()) {
-				try {
-					cout << "  [fd-debug] root volume: " << sys->box.volume() << "\n";
-				} catch (...) {
-					cout << "  [fd-debug] root volume: (error computing)\n";
-				}
-			}
 		}
 
 		auto infer_mode = [&](const std::string& exe)->std::string {
@@ -387,8 +354,6 @@ int main(int argc, char** argv) {
 
 		if (use_fd_variant) {
 			string mode = fd_choice;
-		if (use_fd_variant) {
-			string mode = fd_choice;
 			if (mode=="depth_k" || mode=="depth_k_rand" || mode=="vol_k" || mode=="vol_k_rand") {
 				// Para estas variantes, usamos un bisector OptimLargestFirst sin dividir el objetivo.
 				ExtendedSystem& ext_sys = config.get_ext_sys();
@@ -397,8 +362,26 @@ int main(int argc, char** argv) {
 				fd_bisector.reset(new OptimLargestFirst(ext_sys.goal_var(), /*choose_obj=*/false, eps_scalar));
 				CellBufferOptim* buffer_ptr = &config.get_cell_buffer();
 				double V0_ref = 1.0;
+				double logV_ref = 0.0;
 				if (!sys->box.is_empty() && !sys->box.is_unbounded()) {
 					try { V0_ref = sys->box.volume(); } catch (...) { V0_ref = 1.0; }
+				}
+				// Calcular log10(volumen) como respaldo si el volumen desborda.
+				auto log_volume_box = [](const IntervalVector& box)->double {
+					double acc = 0.0;
+					for (int i=0;i<box.size();++i) {
+						double w = box[i].diam();
+						if (!std::isfinite(w) || w<=0.0) return POS_INFINITY;
+						acc += std::log10(w);
+					}
+					return acc;
+				};
+				logV_ref = log_volume_box(sys->box);
+				if (!std::isfinite(V0_ref) || V0_ref<=0.0) {
+					V0_ref = 1.0; // evitamos INF/NaN
+				}
+				if (!std::isfinite(logV_ref)) {
+					try { logV_ref = std::log10(std::max(1e-12, V0_ref)); } catch (...) { logV_ref = 0.0; }
 				}
 				bool is_rand = (mode.find("_rand")!=string::npos);
 				bool use_depth = (mode.find("depth")!=string::npos);
@@ -455,31 +438,33 @@ int main(int argc, char** argv) {
 				}
 				// vol cut muestreado por corrida (alrededor de 5%)
 				if (use_vol) {
-					// Umbral medio para que dispare en medium.
-					double v = 0.1 * (1.0 + 0.1 * (2.0*u01()-1.0));
+					// Umbral medio para que dispare antes: subimos el corte de volumen.
+					double v = 0.22 * (1.0 + 0.1 * (2.0*u01()-1.0));
 					v = scale_vol(v);
-					params.vol_ratio_cut = std::max(0.07, std::min(0.13, v));
-					params.vol_cut_jitter = 0.1; // variación por nodo
-					params.vol_hard_ratio = 0.02; // corte duro adicional para evitar tiempos enormes
+					params.vol_ratio_cut = std::max(0.15, std::min(0.3, v));
+					params.vol_cut_jitter = 0.15; // variación por nodo más alta
+					params.vol_hard_ratio = 0.02; // corte duro adicional para evitar tiempos enormes (solo penaliza)
 				} else {
 					params.vol_ratio_cut = 0.0;
 				}
 				params.V0_ref = V0_ref;
-				params.depth_penalty = 1e6;
-				params.vol_penalty = 1e6;
+				params.log_V0_ref = logV_ref;
+				params.use_log_volume = true; // usar siempre log para evitar overflow/underflow en volumen
+				params.depth_penalty = 0.0;
+				params.vol_penalty = 0.0;
 				params.rand_k = is_rand;
 				params.rand_seed = seed;
 				params.tie_noise = 1e-3; // ruido para desempate moderado
 
 				// Ajustes extra para dominios muy grandes: reducir ruido térmico y profundidades.
-				if (logV > 6) {
-					params.bias *= 0.1;          // menos peso térmico
-					params.tie_noise *= 0.1;     // menos ruido
-					params.vol_hard_ratio = 0.03; // corte duro moderado en volumen relativo
-					if (params.vol_ratio_cut > 0.15) params.vol_ratio_cut = 0.15;
-					if (use_depth) {
-						params.depth_cut = std::max(2, std::min(4, params.depth_cut));
-						params.depth_hard_cut = params.depth_cut + 2;
+					if (logV > 6) {
+						params.bias *= 0.1;          // menos peso térmico
+						params.tie_noise *= 0.1;     // menos ruido
+						params.vol_hard_ratio = 0.03; // corte duro moderado en volumen relativo
+						if (params.vol_ratio_cut > 0.25) params.vol_ratio_cut = 0.25;
+						if (use_depth) {
+							params.depth_cut = std::max(2, std::min(4, params.depth_cut));
+							params.depth_hard_cut = params.depth_cut + 2;
 					}
 					if (is_rand) {
 						// bajar la dispersión de k en dominios enormes para no ir a rutas muy malas
@@ -487,19 +472,21 @@ int main(int argc, char** argv) {
 						params.k = k_base * (1.0 + kspread * (2.0*u01()-1.0));
 						params.k = std::max(5.0, std::min(15.0, params.k));
 					}
-				} else if (logV > 3) {
-					params.bias *= 0.3;
-					params.tie_noise *= 0.3;
-					params.vol_hard_ratio = 0.025;
-					if (params.vol_ratio_cut > 0.12) params.vol_ratio_cut = 0.12;
-				}
+					} else if (logV > 3) {
+						params.bias *= 0.3;
+						params.tie_noise *= 0.3;
+						params.vol_hard_ratio = 0.025;
+						if (params.vol_ratio_cut > 0.22) params.vol_ratio_cut = 0.22;
+					}
 
-				// Aplicamos TempBuffer a las variantes FD (depth/vol) con parámetros moderados.
-				if (use_depth || use_vol) {
-					temp_buffer.reset(new TempBuffer(ext_sys, ext_sys.goal_var(), params));
-					temp_raw = temp_buffer.get();
-					buffer_ptr = temp_raw;
-				}
+					// Aplicamos TempBuffer a las variantes FD (depth/vol) con empate específico.
+					if (use_depth) params.tie_break_mode = 1;
+					else if (use_vol) params.tie_break_mode = 2;
+					if (use_depth || use_vol) {
+						temp_buffer.reset(new TempBuffer(ext_sys, ext_sys.goal_var(), params));
+						temp_raw = temp_buffer.get();
+						buffer_ptr = temp_raw;
+					}
 
 				opt_owner.reset(new Optimizer(
 					config.nb_var(),
@@ -507,14 +494,12 @@ int main(int argc, char** argv) {
 					*fd_bisector,
 					config.get_loup_finder(),
 					*buffer_ptr,
-					*buffer_ptr,
 					config.goal_var(),
 					OptimizerConfig::default_eps_x,
 					config.get_rel_eps_f(),
 					config.get_abs_eps_f(),
 					config.with_statistics()));
 				opt_ptr = opt_owner.get();
-				if (!quiet) cout << "  fd-mode:\t\t" << mode << " (bisector OptimLargestFirst + TempBuffer)\n";
 				if (!quiet) cout << "  fd-mode:\t\t" << mode << " (bisector OptimLargestFirst + TempBuffer)\n";
 			} else {
 				if (!quiet) cerr << "  [warning] fd-mode '" << mode << "' no soportado; usando modo base.\n";
@@ -559,7 +544,11 @@ int main(int argc, char** argv) {
 
 		if (temp_raw && use_fd_variant) {
 			// Línea fácil de parsear para el menú/CSV.
-			cout << "fd_triggers:" << temp_raw->trigger_count() << endl;
+			cout << "fd_triggers_total:" << temp_raw->trigger_count() << endl;
+			cout << "fd_triggers_depth:" << temp_raw->depth_trigger_count() << endl;
+			cout << "fd_triggers_vol:" << temp_raw->vol_trigger_count() << endl;
+			cout << "fd_vol_eval:" << temp_raw->vol_eval_count() << endl;
+			cout << "fd_vol_nonfinite:" << temp_raw->vol_nonfinite_count() << endl;
 			cout << "triggers_csv:" << temp_raw->trigger_count() << endl;
 		}
 

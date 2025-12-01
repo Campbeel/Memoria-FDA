@@ -1,0 +1,11 @@
+run,variant,problem,triggers_total,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
+5,depth_k,ex2_1_8.bch,149,149,0,151,151
+3,depth_k,ex2_1_8.bch,150,150,0,152,152
+4,depth_k,ex2_1_8.bch,159,159,0,161,161
+0,depth_k,ex2_1_8.bch,153,153,0,155,155
+2,depth_k,ex2_1_8.bch,190,190,0,192,192
+1,depth_k,ex2_1_8.bch,190,190,0,192,192
+6,depth_k,ex2_1_8.bch,173,173,0,175,175
+9,depth_k,ex2_1_8.bch,174,174,0,176,176
+7,depth_k,ex2_1_8.bch,187,187,0,189,189
+8,depth_k,ex2_1_8.bch,190,190,0,192,192

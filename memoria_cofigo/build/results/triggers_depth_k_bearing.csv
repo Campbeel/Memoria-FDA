@@ -1,0 +1,11 @@
+run,variant,problem,triggers_total,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
+1,depth_k,bearing.bch,10561,10561,0,10563,10563
+5,depth_k,bearing.bch,9319,9319,0,9321,9321
+3,depth_k,bearing.bch,9963,9963,0,9965,9965
+0,depth_k,bearing.bch,13128,13128,0,13130,13130
+4,depth_k,bearing.bch,13378,13378,0,13380,13380
+6,depth_k,bearing.bch,9349,9349,0,9351,9351
+2,depth_k,bearing.bch,23309,23309,0,23311,23311
+7,depth_k,bearing.bch,11808,11808,0,11810,11810
+9,depth_k,bearing.bch,15030,15030,0,15032,15032
+8,depth_k,bearing.bch,20466,20466,0,20468,20468

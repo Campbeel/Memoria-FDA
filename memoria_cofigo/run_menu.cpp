@@ -15,6 +15,7 @@
 #include <sstream>
 #include <thread>
 #include <vector>
+#include <random>
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -34,17 +35,26 @@ static const VariantInfo kVariants[] = {
     {"depth_k_rand","./ibex_opt_full",      "depth_k_rand",0.0   }
 };
 
+struct RunResult {
+    string csv_line;
+    long triggers_total = -1;
+    long triggers_depth = -1;
+    long triggers_vol = -1;
+    long vol_eval = -1;
+    long vol_nonfinite = -1;
+};
+
 // Ejecuta ibex_opt_full y extrae nodos, tiempo, loup; formato CSV.
-string run_ibex_base(const string& cmd, const string& variant, int run_id) {
+RunResult run_ibex_base(const string& cmd, const string& variant, int run_id) {
     FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) return "";
+    RunResult res;
+    if (!pipe) return res;
     char buf[4096];
     string line;
     double best = 0.0;
     long nodes = -1;
     double elapsed = 0.0;
     bool optimal = false;
-    long triggers = -1;
     while (fgets(buf, sizeof(buf), pipe)) {
         line = buf;
         if (line.find("nodes (cells):") != string::npos) {
@@ -58,8 +68,18 @@ string run_ibex_base(const string& cmd, const string& variant, int run_id) {
             }
         } else if (line.find("optimization successful") != string::npos) {
             optimal = true;
+        } else if (line.find("fd_triggers_total:") != string::npos) {
+            try { res.triggers_total = stol(line.substr(line.find(':')+1)); } catch(...) {}
+        } else if (line.find("fd_triggers_depth:") != string::npos) {
+            try { res.triggers_depth = stol(line.substr(line.find(':')+1)); } catch(...) {}
+        } else if (line.find("fd_triggers_vol:") != string::npos) {
+            try { res.triggers_vol = stol(line.substr(line.find(':')+1)); } catch(...) {}
+        } else if (line.find("fd_vol_eval:") != string::npos) {
+            try { res.vol_eval = stol(line.substr(line.find(':')+1)); } catch(...) {}
+        } else if (line.find("fd_vol_nonfinite:") != string::npos) {
+            try { res.vol_nonfinite = stol(line.substr(line.find(':')+1)); } catch(...) {}
         } else if (line.find("fd_triggers:") != string::npos || line.find("triggers_csv:") != string::npos) {
-            // Captura genérica sin depender de espacios exactos.
+            // Compatibilidad con versiones anteriores: tratamos como total.
             size_t pos = line.find("fd_triggers:");
             int offset = 12;
             if (pos == string::npos) {
@@ -69,7 +89,7 @@ string run_ibex_base(const string& cmd, const string& variant, int run_id) {
             if (pos != string::npos) {
                 try {
                     long t = stol(line.substr(pos + offset));
-                    triggers = t;
+                    res.triggers_total = t;
                 } catch(...) {}
             }
         }
@@ -79,8 +99,17 @@ string run_ibex_base(const string& cmd, const string& variant, int run_id) {
     stringstream ss;
     ss << run_id << "," << variant << "," << best << "," << nodes << "," << elapsed
        << ",NA,NA," << (optimal ? 1 : 0) << ",";
-    if (triggers>=0) ss << triggers; else ss << "0";
-    return ss.str();
+    if (res.triggers_total>=0) ss << res.triggers_total; else ss << "0";
+    ss << ",";
+    if (res.triggers_depth>=0) ss << res.triggers_depth; else ss << "0";
+    ss << ",";
+    if (res.triggers_vol>=0) ss << res.triggers_vol; else ss << "0";
+    ss << ",";
+    if (res.vol_eval>=0) ss << res.vol_eval; else ss << "0";
+    ss << ",";
+    if (res.vol_nonfinite>=0) ss << res.vol_nonfinite; else ss << "0";
+    res.csv_line = ss.str();
+    return res;
 }
 
 int main() {
@@ -119,6 +148,25 @@ int main() {
         out.reserve(files.size());
         for (auto& f : files) out.push_back(f.string());
         return out;
+    };
+
+    auto prompt_seed_base = []() -> long long {
+        cout << "Semilla base (Enter o 0 = aleatoria distinta por corrida): ";
+        string line;
+        getline(cin >> ws, line);
+        if (line.empty()) return -1;
+        long long s = atoll(line.c_str());
+        return s > 0 ? s : -1;
+    };
+
+    auto make_seed_for_run = [&](long long seed_base) {
+        return [seed_base](int run_id) -> long long {
+            if (seed_base > 0) return seed_base + run_id;
+            static std::random_device rd;
+            static std::mt19937_64 gen(rd());
+            uint64_t salt = static_cast<uint64_t>(run_id) * 0x9e3779b97f4a7c15ULL;
+            return static_cast<long long>(gen() ^ salt);
+        };
     };
 
     if (choice == 6) {
@@ -201,16 +249,24 @@ int main() {
             return 1;
         }
 
+        long long seed_base = prompt_seed_base();
+        auto seed_for_run = make_seed_for_run(seed_base);
+
         fs::create_directories("results");
         auto run_problem = [&](const string& prob_path) {
             string prob_name = fs::path(prob_path).filename().string();
             for (const VariantInfo* vp : selected) {
                 // CSV por problema y variante (se reinicia en cada problema).
                 string csv = "results/results_" + vp->name + "_" + fs::path(prob_name).stem().string() + ".csv";
+                string trig_csv = "results/triggers_" + vp->name + "_" + fs::path(prob_name).stem().string() + ".csv";
                 if (fs::exists(csv)) fs::remove(csv);
+                if (fs::exists(trig_csv)) fs::remove(trig_csv);
                 ofstream o(csv, ios::out);
-                o << "run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers\n";
+                o << "run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers,triggers_depth,triggers_vol,vol_eval,vol_nonfinite\n";
                 o.close();
+                ofstream ot(trig_csv, ios::out);
+                ot << "run,variant,problem,triggers_total,triggers_depth,triggers_vol,vol_eval,vol_nonfinite\n";
+                ot.close();
 
                 cout << " Ejecutando " << vp->name << " sobre " << prob_name << "...\n";
                 const int runs = 10;
@@ -237,14 +293,16 @@ int main() {
                         if (idx >= tasks.size()) break;
                         int r = tasks[idx].r;
                         string cmd = vp->binary + " " + prob_path;
-                        long long seed = 3000003LL + static_cast<long long>(r); // se reinicia por problema
+                        long long seed = seed_for_run(r); // semilla controlada por usuario
                         cmd += " --random-seed=" + std::to_string(seed);
                         if (!vp->fd_mode.empty()) cmd += " --fd-mode=" + vp->fd_mode;
                         if (vp->timeout > 0.0)   cmd += " --timeout=" + std::to_string(vp->timeout);
-                        string line = run_ibex_base(cmd, vp->name, r);
+                        RunResult res = run_ibex_base(cmd, vp->name, r);
                         lock_guard<mutex> lk(m);
                         ofstream out(csv, ios::app);
-                        if (!line.empty()) {
+                        ofstream outt(trig_csv, ios::app);
+                        if (!res.csv_line.empty()) {
+                            string line = res.csv_line;
                             size_t first = line.find(',');
                             size_t second = line.find(',', first+1);
                             if (first!=string::npos && second!=string::npos) {
@@ -252,9 +310,16 @@ int main() {
                             }
                             out << line;
                             if (line.back() != '\n') out << "\n";
+                            outt << r << "," << vp->name << "," << prob_name << ","
+                                 << (res.triggers_total>=0?res.triggers_total:0) << ","
+                                 << (res.triggers_depth>=0?res.triggers_depth:0) << ","
+                                 << (res.triggers_vol>=0?res.triggers_vol:0) << ","
+                                 << (res.vol_eval>=0?res.vol_eval:0) << ","
+                                 << (res.vol_nonfinite>=0?res.vol_nonfinite:0) << "\n";
                         } else {
                             out << r << "," << vp->name << "," << prob_name
-                                << ",nan,-1,-1,NA,NA,0,NA\n";
+                                << ",nan,-1,-1,NA,NA,0,0,0,0,0,0\n";
+                            outt << r << "," << vp->name << "," << prob_name << ",0,0,0,0,0\n";
                         }
                     }
                 };
@@ -328,13 +393,21 @@ int main() {
     if ((unsigned) runs > max_parallel) runs = max_parallel;
     unsigned par = runs;
 
+    long long seed_base = prompt_seed_base();
+    auto seed_for_run = make_seed_for_run(seed_base);
+
     fs::create_directories("results");
     string base_name = fs::path(problem).stem().string();
     string csv = "results/results_" + vinfo.name + "_" + base_name + ".csv";
+    string trig_csv = "results/triggers_" + vinfo.name + "_" + base_name + ".csv";
     if (fs::exists(csv)) fs::remove(csv);
+    if (fs::exists(trig_csv)) fs::remove(trig_csv);
     ofstream ofs(csv, ios::out);
-    ofs << "run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers\n";
+    ofs << "run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers,triggers_depth,triggers_vol,vol_eval,vol_nonfinite\n";
     ofs.close();
+    ofstream ot(trig_csv, ios::out);
+    ot << "run,variant,problem,triggers_total,triggers_depth,triggers_vol,vol_eval,vol_nonfinite\n";
+    ot.close();
 
     mutex m;
     vector<thread> pool;
@@ -342,7 +415,7 @@ int main() {
 
     auto worker = [&](int idx) {
         string cmd = vinfo.binary + " " + problem;
-        long long seed = 2000003LL + static_cast<long long>(idx);
+        long long seed = seed_for_run(idx);
         cmd += " --random-seed=" + std::to_string(seed);
         if (!vinfo.fd_mode.empty()) {
             cmd += " --fd-mode=" + vinfo.fd_mode;
@@ -350,10 +423,12 @@ int main() {
         if (vinfo.timeout > 0.0) {
             cmd += " --timeout=" + std::to_string(vinfo.timeout);
         }
-        string line = run_ibex_base(cmd, vinfo.name, idx);
+        RunResult res = run_ibex_base(cmd, vinfo.name, idx);
         lock_guard<mutex> lk(m);
         ofstream o(csv, ios::app);
-        if (!line.empty()) {
+        ofstream ot(trig_csv, ios::app);
+        if (!res.csv_line.empty()) {
+            string line = res.csv_line;
             string prob_name = fs::path(problem).filename().string();
             size_t first = line.find(',');
             size_t second = line.find(',', first+1);
@@ -362,9 +437,16 @@ int main() {
             }
             o << line;
             if (line.back() != '\n') o << "\n";
+            ot << idx << "," << vinfo.name << "," << prob_name << ","
+               << (res.triggers_total>=0?res.triggers_total:0) << ","
+               << (res.triggers_depth>=0?res.triggers_depth:0) << ","
+               << (res.triggers_vol>=0?res.triggers_vol:0) << ","
+               << (res.vol_eval>=0?res.vol_eval:0) << ","
+               << (res.vol_nonfinite>=0?res.vol_nonfinite:0) << "\n";
         } else {
             o << idx << "," << vinfo.name << "," << fs::path(problem).filename().string()
-              << ",NA,NA,NA,NA,NA,0\n";
+              << ",NA,NA,NA,NA,NA,0,0,0,0,0,0\n";
+            ot << idx << "," << vinfo.name << "," << fs::path(problem).filename().string() << ",0,0,0,0,0\n";
         }
     };
 

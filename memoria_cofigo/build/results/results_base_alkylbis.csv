@@ -1,0 +1,11 @@
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
+2,base,alkylbis.bch,-1.76471,24,0.03843,NA,NA,1,0,0,0,0,0
+3,base,alkylbis.bch,-1.76442,46,0.073863,NA,NA,1,0,0,0,0,0
+5,base,alkylbis.bch,-1.76496,50,0.078972,NA,NA,1,0,0,0,0,0
+1,base,alkylbis.bch,-1.76409,50,0.082579,NA,NA,1,0,0,0,0,0
+0,base,alkylbis.bch,-1.76489,52,0.084942,NA,NA,1,0,0,0,0,0
+6,base,alkylbis.bch,-1.76489,26,0.04354,NA,NA,1,0,0,0,0,0
+4,base,alkylbis.bch,-1.76474,62,0.097262,NA,NA,1,0,0,0,0,0
+8,base,alkylbis.bch,-1.7643,42,0.06607,NA,NA,1,0,0,0,0,0
+7,base,alkylbis.bch,-1.76495,44,0.075606,NA,NA,1,0,0,0,0,0
+9,base,alkylbis.bch,-1.76368,42,0.067403,NA,NA,1,0,0,0,0,0
