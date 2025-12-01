@@ -8,3 +8,4 @@ run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,trigger
 4,vol_k,ex14_2_3.bch,1.29209e-09,18612,12.4133,NA,NA,1,0
 9,vol_k,ex14_2_3.bch,1.43751e-09,10100,6.36502,NA,NA,1,0
 8,vol_k,ex14_2_3.bch,1.00067e-09,10092,7.02392,NA,NA,1,0
+7,vol_k,ex14_2_3.bch,8.5446e-09,16758,12.4783,NA,NA,1,0
