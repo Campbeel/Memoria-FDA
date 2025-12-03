@@ -1,0 +1,11 @@
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
+4,base,haverly.bch,-400,74,0.088526,NA,NA,1,0,0,0,0,0
+5,base,haverly.bch,-400,74,0.08934,NA,NA,1,0,0,0,0,0
+0,base,haverly.bch,-400,76,0.090967,NA,NA,1,0,0,0,0,0
+2,base,haverly.bch,-400,78,0.092566,NA,NA,1,0,0,0,0,0
+1,base,haverly.bch,-400,94,0.120695,NA,NA,1,0,0,0,0,0
+3,base,haverly.bch,-400,100,0.120898,NA,NA,1,0,0,0,0,0
+9,base,haverly.bch,-400,80,0.092978,NA,NA,1,0,0,0,0,0
+7,base,haverly.bch,-400,94,0.111796,NA,NA,1,0,0,0,0,0
+6,base,haverly.bch,-400,94,0.113917,NA,NA,1,0,0,0,0,0
+8,base,haverly.bch,-400,94,0.112996,NA,NA,1,0,0,0,0,0

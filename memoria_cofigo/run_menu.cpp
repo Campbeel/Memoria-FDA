@@ -28,11 +28,12 @@ struct VariantInfo {
 };
 
 static const VariantInfo kVariants[] = {
-    {"base",        "./ibex_opt_full",      "",           0.0    },
-    {"vol_k",       "./ibex_opt_full",      "vol_k",      1800.0 },
-    {"vol_k_rand",  "./ibex_opt_full",      "vol_k_rand", 1800.0 },
-    {"depth_k",     "./ibex_opt_full",      "depth_k",    0.0    },
-    {"depth_k_rand","./ibex_opt_full",      "depth_k_rand",0.0   }
+// Timeouts en segundos; 120s = 2 min.
+{"base",        "./ibex_opt_full",      "",           120.0 },
+{"vol_k",       "./ibex_opt_full",      "vol_k",      120.0 },
+{"vol_k_rand",  "./ibex_opt_full",      "vol_k_rand", 120.0 },
+{"depth_k",     "./ibex_opt_full",      "depth_k",    120.0 },
+{"depth_k_rand","./ibex_opt_full",      "depth_k_rand",120.0}
 };
 
 struct RunResult {
@@ -125,7 +126,7 @@ int main() {
     for (size_t i = 0; i < sizeof(kVariants)/sizeof(kVariants[0]); ++i) {
         cout << " " << (i+1) << ". " << kVariants[i].name << "\n";
     }
-    cout << " 6. Correr todo (5 variantes x 20 problemas x 10 repeticiones)\n";
+    cout << " 6. Correr todo (5 variantes x 30 problemas x 10 repeticiones)\n";
 
     int choice = 0;
     cout << "Opcion: ";
@@ -253,8 +254,14 @@ int main() {
         auto seed_for_run = make_seed_for_run(seed_base);
 
         fs::create_directories("results");
-        auto run_problem = [&](const string& prob_path) {
-            string prob_name = fs::path(prob_path).filename().string();
+    auto run_problem = [&](const string& prob_path) {
+        string prob_name = fs::path(prob_path).filename().string();
+        // Excluir problemas lentos conocidos
+        static const std::vector<std::string> kSkip = {"schwefel5.bch", "schwefel5-abs.bch", "ex8_5_2_1.bch", "ex7_3_4.bch"};
+        if (std::find(kSkip.begin(), kSkip.end(), prob_name) != kSkip.end()) {
+            cout << "  [skip] " << prob_name << "\n";
+            return;
+        }
             for (const VariantInfo* vp : selected) {
                 // CSV por problema y variante (se reinicia en cada problema).
                 string csv = "results/results_" + vp->name + "_" + fs::path(prob_name).stem().string() + ".csv";

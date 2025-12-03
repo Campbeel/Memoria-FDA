@@ -1,0 +1,11 @@
+run,variant,problem,triggers_total,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
+4,depth_k,haverly.bch,94,94,0,95,95
+0,depth_k,haverly.bch,96,96,0,97,97
+1,depth_k,haverly.bch,94,94,0,96,96
+3,depth_k,haverly.bch,103,103,0,104,104
+2,depth_k,haverly.bch,103,103,0,104,104
+5,depth_k,haverly.bch,92,92,0,93,93
+6,depth_k,haverly.bch,99,99,0,100,100
+7,depth_k,haverly.bch,99,99,0,100,100
+9,depth_k,haverly.bch,96,96,0,97,97
+8,depth_k,haverly.bch,99,99,0,100,100

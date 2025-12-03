@@ -1,0 +1,11 @@
+run,variant,problem,triggers_total,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
+3,depth_k_rand,launch.bch,7268,7268,0,7270,7270
+4,depth_k_rand,launch.bch,7556,7556,0,7558,7558
+1,depth_k_rand,launch.bch,10527,10527,0,10529,10529
+5,depth_k_rand,launch.bch,10423,10423,0,10425,10425
+2,depth_k_rand,launch.bch,13367,13367,0,13369,13369
+0,depth_k_rand,launch.bch,13361,13361,0,13363,13363
+9,depth_k_rand,launch.bch,3682,3682,0,3684,3684
+6,depth_k_rand,launch.bch,10963,10963,0,10965,10965
+8,depth_k_rand,launch.bch,9511,9511,0,9513,9513
+7,depth_k_rand,launch.bch,13634,13634,0,13636,13636

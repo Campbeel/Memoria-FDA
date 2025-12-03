@@ -7,5 +7,5 @@ run,variant,problem,triggers_total,triggers_depth,triggers_vol,vol_eval,vol_nonf
 8,depth_k_rand,ex14_2_3.bch,3692,3692,0,3694,3694
 0,depth_k_rand,ex14_2_3.bch,10346,10346,0,10348,10348
 6,depth_k_rand,ex14_2_3.bch,6018,6018,0,6020,6020
-9,depth_k_rand,ex14_2_3.bch,7527,7527,0,7529,7529
 7,depth_k_rand,ex14_2_3.bch,7844,7844,0,7846,7846
+9,depth_k_rand,ex14_2_3.bch,7527,7527,0,7529,7529

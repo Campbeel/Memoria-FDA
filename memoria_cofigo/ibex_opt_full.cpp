@@ -410,20 +410,22 @@ int main(int argc, char** argv) {
 				int nv = sys->nb_var;
 				auto scale_vol = [&](double base) {
 					double v = base;
-					if (logV > 6) v *= 1.5;   // volumen enorme -> umbral más alto
-					else if (logV > 3) v *= 1.2;
-					else if (logV < -2) v *= 0.7;  // volumen pequeño -> umbral más bajo
-					if (nv > 20) v *= 1.2;         // más vars: subir umbral para explorar
-					if (nv < 8) v *= 0.9;          // pocos vars: bajar umbral
+					// Problemas grandes: permitir explorar más -> bajar umbral
+					if (logV > 6) v *= 0.7;
+					else if (logV > 3) v *= 0.85;
+					else if (logV < -2) v *= 1.3;  // problemas pequeños: disparar antes
+					if (nv > 20) v *= 0.8;         // muchos vars -> bajar umbral
+					if (nv < 8) v *= 1.2;          // pocos vars -> subir umbral
 					return v;
 				};
 				auto scale_depth = [&](int base) {
 					int d = base;
-					if (logV > 6) d = std::max(2, d-2); // dominios grandes: menos profundidad
-					else if (logV > 3) d = std::max(3, d-1);
-					else if (logV < -2) d = d+1;             // dominios pequeños: más profundidad
-					if (nv > 20) d = std::max(2, d-1);       // muchos vars: bajar profundidad
-					if (nv < 8) d = d+1;                     // pocos vars: permitir más
+					// Problemas grandes: permitir más profundidad
+					if (logV > 6) d = d+2;
+					else if (logV > 3) d = d+1;
+					else if (logV < -2) d = std::max(1, d-1); // problemas pequeños: menos profundidad
+					if (nv > 20) d = d+1;                     // más vars -> más profundidad
+					if (nv < 8) d = std::max(1, d-1);         // pocos vars -> menos
 					return d;
 				};
 				// depth cut muestreado por corrida (alrededor de 2-3 para disparar)
@@ -432,7 +434,7 @@ int main(int argc, char** argv) {
 					d = scale_depth(d);
 					params.depth_cut = std::max(2, std::min(6, d));
 					params.depth_cut_jitter = 0.1; // variación por nodo
-					params.depth_hard_cut = params.depth_cut + 3; // tope duro para evitar explosiones
+					params.depth_hard_cut = 0.0; // cortes duros desactivados
 				} else {
 					params.depth_cut = 0;
 				}
@@ -443,13 +445,14 @@ int main(int argc, char** argv) {
 					v = scale_vol(v);
 					params.vol_ratio_cut = std::max(0.15, std::min(0.3, v));
 					params.vol_cut_jitter = 0.15; // variación por nodo más alta
-					params.vol_hard_ratio = 0.02; // corte duro adicional para evitar tiempos enormes (solo penaliza)
+					params.vol_hard_ratio = 0.0; // cortes duros desactivados
 				} else {
 					params.vol_ratio_cut = 0.0;
 				}
 				params.V0_ref = V0_ref;
 				params.log_V0_ref = logV_ref;
 				params.use_log_volume = true; // usar siempre log para evitar overflow/underflow en volumen
+				// Penalizaciones desactivadas: priorizamos sólo temperatura (bias).
 				params.depth_penalty = 0.0;
 				params.vol_penalty = 0.0;
 				params.rand_k = is_rand;
@@ -479,11 +482,8 @@ int main(int argc, char** argv) {
 						if (params.vol_ratio_cut > 0.22) params.vol_ratio_cut = 0.22;
 					}
 
-					// Aplicamos TempBuffer a las variantes FD (depth/vol) con empate específico.
-					if (use_depth) params.tie_break_mode = 1;
-					else if (use_vol) params.tie_break_mode = 2;
 					if (use_depth || use_vol) {
-						temp_buffer.reset(new TempBuffer(ext_sys, ext_sys.goal_var(), params));
+						temp_buffer.reset(new TempBuffer(ext_sys, ext_sys.goal_var(), params, *buffer_ptr));
 						temp_raw = temp_buffer.get();
 						buffer_ptr = temp_raw;
 					}

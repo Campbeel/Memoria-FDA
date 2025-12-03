@@ -1,0 +1,3 @@
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
+1,base,ex8_5_2_1.bch,0.00203918,3784348,120,NA,NA,0,0,0,0,0,0
+0,base,ex8_5_2_1.bch,0.00384327,2067410,120,NA,NA,0,0,0,0,0,0

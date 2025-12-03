@@ -1,0 +1,3 @@
+run,variant,problem,triggers_total,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
+0,base,schwefel5.bch,0,0,0,0,0
+1,base,schwefel5.bch,0,0,0,0,0

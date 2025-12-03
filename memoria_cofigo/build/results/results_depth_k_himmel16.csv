@@ -1,0 +1,11 @@
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
+3,depth_k,himmel16.bch,-0.865302,3000,5.50499,NA,NA,1,1726,1726,0,1728,1728
+5,depth_k,himmel16.bch,-0.865302,3000,5.54129,NA,NA,1,1726,1726,0,1728,1728
+1,depth_k,himmel16.bch,-0.865327,3864,7.85197,NA,NA,1,2206,2206,0,2208,2208
+0,depth_k,himmel16.bch,-0.865327,3864,7.85449,NA,NA,1,2206,2206,0,2208,2208
+2,depth_k,himmel16.bch,-0.865327,3864,7.92007,NA,NA,1,2206,2206,0,2208,2208
+4,depth_k,himmel16.bch,-0.865327,3864,7.94514,NA,NA,1,2206,2206,0,2208,2208
+7,depth_k,himmel16.bch,-0.865503,2668,5.05697,NA,NA,1,1399,1399,0,1401,1401
+6,depth_k,himmel16.bch,-0.865302,3000,5.43295,NA,NA,1,1726,1726,0,1728,1728
+9,depth_k,himmel16.bch,-0.865302,3000,5.31298,NA,NA,1,1726,1726,0,1728,1728
+8,depth_k,himmel16.bch,-0.865302,3000,5.29723,NA,NA,1,1726,1726,0,1728,1728

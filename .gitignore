@@ -1,0 +1,4 @@
+# Archivos .cov muy grandes que no se suben a GitHub (límite 100MB)
+memoria_cofigo/casos/medium/schwefel5-abs.cov
+memoria_cofigo/casos/medium/schwefel5.cov
+memoria_cofigo/casos/medium/ex8_5_2_1.cov

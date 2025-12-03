@@ -2,10 +2,10 @@ run,variant,problem,triggers_total,triggers_depth,triggers_vol,vol_eval,vol_nonf
 3,vol_k_rand,ex6_1_3bis.bch,4990,0,4990,4996,6
 0,vol_k_rand,ex6_1_3bis.bch,4995,0,4995,4995,0
 1,vol_k_rand,ex6_1_3bis.bch,4995,0,4995,4996,1
+2,vol_k_rand,ex6_1_3bis.bch,4990,0,4990,4996,6
 4,vol_k_rand,ex6_1_3bis.bch,5179,0,5179,5196,17
 5,vol_k_rand,ex6_1_3bis.bch,5170,0,5170,5196,26
-2,vol_k_rand,ex6_1_3bis.bch,4990,0,4990,4996,6
-6,vol_k_rand,ex6_1_3bis.bch,5195,0,5195,5196,1
 7,vol_k_rand,ex6_1_3bis.bch,5195,0,5195,5196,1
-9,vol_k_rand,ex6_1_3bis.bch,5186,0,5186,5196,10
+6,vol_k_rand,ex6_1_3bis.bch,5195,0,5195,5196,1
 8,vol_k_rand,ex6_1_3bis.bch,5183,0,5183,5196,13
+9,vol_k_rand,ex6_1_3bis.bch,5186,0,5186,5196,10

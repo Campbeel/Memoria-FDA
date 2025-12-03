@@ -1,10 +1,10 @@
 run,variant,problem,triggers_total,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
 5,depth_k,ex2_1_9.bch,1469,1469,0,1474,1474
-2,depth_k,ex2_1_9.bch,1502,1502,0,1508,1508
-0,depth_k,ex2_1_9.bch,1500,1500,0,1505,1505
-1,depth_k,ex2_1_9.bch,1506,1506,0,1508,1508
 4,depth_k,ex2_1_9.bch,1472,1472,0,1474,1474
 3,depth_k,ex2_1_9.bch,1506,1506,0,1508,1508
+0,depth_k,ex2_1_9.bch,1500,1500,0,1505,1505
+2,depth_k,ex2_1_9.bch,1502,1502,0,1508,1508
+1,depth_k,ex2_1_9.bch,1506,1506,0,1508,1508
 7,depth_k,ex2_1_9.bch,1472,1472,0,1474,1474
 9,depth_k,ex2_1_9.bch,1493,1493,0,1499,1499
 8,depth_k,ex2_1_9.bch,1557,1557,0,1559,1559

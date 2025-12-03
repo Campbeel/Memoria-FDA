@@ -1,0 +1,11 @@
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
+3,vol_k,launch.bch,2259.76,11688,60.4517,NA,NA,1,7244,0,7244,7270,26
+4,vol_k,launch.bch,2259.77,11948,67.3125,NA,NA,1,7533,0,7533,7558,25
+1,vol_k,launch.bch,2259.05,16176,93.0095,NA,NA,1,10501,0,10501,10529,28
+5,vol_k,launch.bch,2257.8,15576,97.5644,NA,NA,1,10401,0,10401,10425,24
+2,vol_k,launch.bch,2257.8,20312,104.943,NA,NA,1,13343,0,13343,13369,26
+0,vol_k,launch.bch,2257.8,20390,105.709,NA,NA,1,13327,0,13327,13363,36
+9,vol_k,launch.bch,2258.89,5138,39.4341,NA,NA,1,3653,0,3653,3684,31
+6,vol_k,launch.bch,2258.08,17260,88,NA,NA,1,10928,0,10928,10965,37
+8,vol_k,launch.bch,2257.81,15318,82.081,NA,NA,1,9468,0,9468,9513,45
+7,vol_k,launch.bch,2257.8,21512,113.759,NA,NA,1,13600,0,13600,13636,36

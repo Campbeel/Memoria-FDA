@@ -1,0 +1,11 @@
+run,variant,problem,best_value,nodes,elapsed,max_depth,avg_depth,optimal,triggers,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
+1,depth_k_rand,haverly.bch,-400,128,0.163598,NA,NA,1,94,94,0,96,96
+5,depth_k_rand,haverly.bch,-399.849,128,0.170966,NA,NA,1,92,92,0,93,93
+4,depth_k_rand,haverly.bch,-399.849,134,0.172736,NA,NA,1,94,94,0,95,95
+0,depth_k_rand,haverly.bch,-400,132,0.174884,NA,NA,1,96,96,0,97,97
+2,depth_k_rand,haverly.bch,-400,144,0.183095,NA,NA,1,103,103,0,104,104
+3,depth_k_rand,haverly.bch,-400,144,0.184581,NA,NA,1,103,103,0,104,104
+6,depth_k_rand,haverly.bch,-399.872,138,0.170494,NA,NA,1,99,99,0,100,100
+9,depth_k_rand,haverly.bch,-400,132,0.164959,NA,NA,1,96,96,0,97,97
+7,depth_k_rand,haverly.bch,-399.872,138,0.168012,NA,NA,1,99,99,0,100,100
+8,depth_k_rand,haverly.bch,-399.872,138,0.169161,NA,NA,1,99,99,0,100,100

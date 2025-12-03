@@ -3,8 +3,8 @@ run,variant,problem,triggers_total,triggers_depth,triggers_vol,vol_eval,vol_nonf
 3,vol_k_rand,alkyl.bch,134,0,134,134,0
 4,vol_k_rand,alkyl.bch,140,0,140,141,1
 5,vol_k_rand,alkyl.bch,140,0,140,141,1
-0,vol_k_rand,alkyl.bch,165,0,165,165,0
 1,vol_k_rand,alkyl.bch,164,0,164,165,1
+0,vol_k_rand,alkyl.bch,165,0,165,165,0
 6,vol_k_rand,alkyl.bch,129,0,129,129,0
 7,vol_k_rand,alkyl.bch,133,0,133,135,2
 8,vol_k_rand,alkyl.bch,135,0,135,135,0

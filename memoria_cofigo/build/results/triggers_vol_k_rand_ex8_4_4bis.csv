@@ -1,0 +1,11 @@
+run,variant,problem,triggers_total,triggers_depth,triggers_vol,vol_eval,vol_nonfinite
+0,vol_k_rand,ex8_4_4bis.bch,139356,0,139356,139472,116
+1,vol_k_rand,ex8_4_4bis.bch,140558,0,140558,140669,111
+4,vol_k_rand,ex8_4_4bis.bch,143442,0,143442,143587,145
+2,vol_k_rand,ex8_4_4bis.bch,142640,0,142640,142760,120
+5,vol_k_rand,ex8_4_4bis.bch,141928,0,141928,142069,141
+3,vol_k_rand,ex8_4_4bis.bch,146421,0,146421,146543,122
+7,vol_k_rand,ex8_4_4bis.bch,137582,0,137582,137702,120
+6,vol_k_rand,ex8_4_4bis.bch,143905,0,143905,144019,114
+9,vol_k_rand,ex8_4_4bis.bch,140717,0,140717,140818,101
+8,vol_k_rand,ex8_4_4bis.bch,142167,0,142167,142300,133
